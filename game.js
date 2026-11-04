@@ -28,6 +28,7 @@
   const W = 960;
   const H = 540;
   const RUNNER_X = 310;
+  const MAX_DISTANCE = 100;
   const LANES = [0, 1, 2];
   const LANE_SPACING = 46;
   const BEST_KEY = 'jezevec-best-score-v1';
@@ -47,7 +48,7 @@
   let lane = 1;
   let energy = 100;
   let score = 0;
-  let distance = 268;
+  let distance = 25;
   let objects = [];
   let trees = [];
   let motes = [];
@@ -468,7 +469,7 @@
   }
 
   function drawChaser() {
-    const closeness = clamp(1 - distance / 430, 0, 1);
+    const closeness = clamp(1 - distance / MAX_DISTANCE, 0, 1);
     const scale = lerp(.68, 1.05, closeness);
     const y = laneY(lane, RUNNER_X) + 4;
     const x = lerp(110, RUNNER_X - 100, closeness);
@@ -482,16 +483,35 @@
     gradient.addColorStop(1, 'rgba(4, 8, 6, .64)');
     ctx.fillStyle = gradient;
     ctx.fillRect(0, 0, W, H);
-    const lightY = laneY(lane, RUNNER_X);
-    const lamp = ctx.createRadialGradient(RUNNER_X + 30, lightY - 25, 5, RUNNER_X + 45, lightY - 20, 235);
-    lamp.addColorStop(0, 'rgba(191, 203, 150, .13)');
-    lamp.addColorStop(1, 'rgba(191, 203, 150, 0)');
-    ctx.fillStyle = lamp;
-    ctx.fillRect(RUNNER_X - 190, 210, 470, 300);
   }
 
-  function addObject(type, laneIndex = Math.floor(rand(0, 3))) {
-    objects.push({ type, lane: laneIndex, x: W + 55, variant: Math.floor(rand(0, 2)), glow: rand(0, 1) });
+  function addObject(type, laneIndex = Math.floor(rand(0, LANES.length)), x = W + 55) {
+    objects.push({ type, lane: laneIndex, x, variant: Math.floor(rand(0, 2)), glow: rand(0, 1) });
+  }
+
+  function spawnPattern(difficultyLevel) {
+    const entryX = W + 55;
+    if (Math.random() < .18) {
+      addObject('mushroom', Math.floor(rand(0, LANES.length)), entryX);
+      return;
+    }
+
+    const firstLane = Math.floor(rand(0, LANES.length));
+    addObject(Math.random() < .55 ? 'stump' : 'log', firstLane, entryX);
+    const blockedLanes = [firstLane];
+    const extraObstacleChance = Math.min(.62, .28 + difficultyLevel * .055);
+
+    if (Math.random() < extraObstacleChance) {
+      const secondLane = (firstLane + (Math.random() < .5 ? 1 : 2)) % LANES.length;
+      addObject(Math.random() < .55 ? 'stump' : 'log', secondLane, entryX + rand(125, 170));
+      blockedLanes.push(secondLane);
+    }
+
+    if (Math.random() < .36) {
+      const openLanes = LANES.filter((laneIndex) => !blockedLanes.includes(laneIndex));
+      const mushroomLane = openLanes[Math.floor(rand(0, openLanes.length))];
+      addObject('mushroom', mushroomLane, entryX + rand(65, 250));
+    }
   }
 
   function startGame() {
@@ -500,7 +520,7 @@
     sceneryOffset = 0;
     score = 0;
     energy = 100;
-    distance = 268;
+    distance = 25;
     lane = 1;
     objects = [];
     spawnTimer = .7;
@@ -547,14 +567,9 @@
 
     if (spawnTimer <= 0) {
       const difficultyLevel = Math.floor(elapsed / 20);
-      const mushroomChance = .24;
-      const obstacleChance = Math.min(.76, .54 + difficultyLevel * .055);
-      const roll = Math.random();
-      if (roll < mushroomChance) addObject('mushroom');
-      else if (roll < mushroomChance + obstacleChance * .55) addObject('stump');
-      else if (roll < mushroomChance + obstacleChance) addObject('log');
-      const baseSpawnInterval = Math.max(.34, .95 * Math.pow(.9, difficultyLevel));
-      spawnTimer = rand(baseSpawnInterval * .75, baseSpawnInterval * 1.25);
+      spawnPattern(difficultyLevel);
+      const waveInterval = Math.max(.66, 1.2 * Math.pow(.92, difficultyLevel));
+      spawnTimer = rand(waveInterval * .85, waveInterval * 1.15);
     }
     if (energy < 50 && beerTimer <= 0 && !objects.some((object) => object.type === 'beer')) {
       if (Math.random() < .78) addObject('beer');
@@ -565,7 +580,7 @@
     const runnerSpeed = 29 + energy * .116;
     const badgerSpeed = 33 + Math.min(12, elapsed * .12);
     distance += (runnerSpeed - badgerSpeed) * dt;
-    distance = clamp(distance, 0, 412);
+    distance = clamp(distance, 0, MAX_DISTANCE);
 
     for (const object of objects) object.x -= trailSpeed * dt;
     for (let i = objects.length - 1; i >= 0; i--) {
@@ -576,11 +591,11 @@
           flash = Math.max(flash, .2);
         } else if (object.type === 'beer') {
           energy = Math.min(100, energy + 38);
-          distance = Math.min(412, distance + 33);
+          distance = Math.min(MAX_DISTANCE, distance + 33);
           flash = .5;
         } else {
           energy = Math.max(0, energy - 19);
-          distance -= 53;
+          distance -= 16;
           shake = 8;
           flash = .85;
         }
@@ -606,7 +621,7 @@
     else if (energy < 50) energyFillEl.style.background = 'linear-gradient(90deg, #c6975b, #e1c078)';
     else energyFillEl.style.background = 'linear-gradient(90deg, #90b66e, #bdd58f)';
     distanceNumberEl.innerHTML = `${Math.max(0, Math.round(distance))} <small>m</small>`;
-    const closeness = clamp(1 - distance / 430, 0, 1);
+    const closeness = clamp(1 - distance / MAX_DISTANCE, 0, 1);
     distanceFillEl.style.width = `${(1 - closeness) * 100}%`;
     distanceBadgerEl.style.left = `${(1 - closeness) * 100}%`;
     const mins = Math.floor(elapsed / 60).toString().padStart(2, '0');
@@ -641,7 +656,7 @@
     pauseIndicator.hidden = true;
     score = 0;
     energy = 100;
-    distance = 268;
+    distance = 25;
     elapsed = 0;
     updateHud();
     draw();
