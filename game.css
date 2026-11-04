@@ -126,6 +126,7 @@ h2 em { font-size: .93em; }
 .final-score { display: grid; justify-items: center; gap: 2px; margin: 11px 0 14px; padding: 10px; border-top: 1px solid #344035; border-bottom: 1px solid #344035; }
 .final-score > span:first-child { color: #889587; font-size: 8px; }
 .final-score strong { font: 600 35px var(--serif); color: #e9dfca; }
+.final-score strong small { color: #b4c58d; font: 10px var(--sans); }
 .final-score > span:last-child { color: #b4c58d; font-size: 10px; }
 .public-leaderboard { margin: 8px 0 12px; text-align: left; }
 .leaderboard-heading { display: flex; align-items: center; justify-content: space-between; color: #9baa85; font: 7px var(--mono); letter-spacing: .13em; }

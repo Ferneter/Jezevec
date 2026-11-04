@@ -17,8 +17,10 @@
   const gameoverScreen = document.getElementById('gameover-screen');
   const pauseIndicator = document.getElementById('pause-indicator');
   const scoreEl = document.getElementById('score');
+  const scoreUnitEl = document.getElementById('score-unit');
   const bestEl = document.getElementById('best-score');
   const finalScoreEl = document.getElementById('final-score');
+  const finalScoreUnitEl = document.getElementById('final-score-unit');
   const recordMessageEl = document.getElementById('record-message');
   const energyNumberEl = document.getElementById('energy-number');
   const energyFillEl = document.getElementById('energy-fill');
@@ -48,6 +50,20 @@
   const rand = (min, max) => min + Math.random() * (max - min);
   const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
   const lerp = (a, b, t) => a + (b - a) * t;
+
+  function mushroomForm(count) {
+    const number = Math.abs(Math.trunc(Number(count) || 0));
+    const lastTwo = number % 100;
+    if (lastTwo >= 12 && lastTwo <= 14) return 'hub';
+    const lastDigit = number % 10;
+    if (lastDigit === 1) return 'houba';
+    if (lastDigit >= 2 && lastDigit <= 4) return 'houby';
+    return 'hub';
+  }
+
+  function formatMushroomCount(count) {
+    return `${count} ${mushroomForm(count)}`;
+  }
 
   let best = readBest();
   let state = 'ready';
@@ -115,7 +131,7 @@
       name.textContent = String(entry.nickname || 'Bezejmenný');
       const value = document.createElement('span');
       value.className = 'leaderboard-score';
-      value.textContent = `${Math.max(0, Number(entry.score) || 0)} hub`;
+      value.textContent = formatMushroomCount(Math.max(0, Number(entry.score) || 0));
       row.append(rank, name, value);
       leaderboardList.append(row);
     });
@@ -671,9 +687,10 @@
       saveBest(best);
     }
     finalScoreEl.textContent = String(score);
-    recordMessageEl.textContent = newRecord ? 'Nový osobní rekord!' : score === best ? 'Vyrovnaný osobní rekord.' : `Osobní rekord: ${best} hub.`;
+    finalScoreUnitEl.textContent = mushroomForm(score);
+    recordMessageEl.textContent = newRecord ? 'Nový osobní rekord!' : score === best ? 'Vyrovnaný osobní rekord.' : `Osobní rekord: ${formatMushroomCount(best)}.`;
     recordMessageEl.style.color = newRecord ? '#d9bb79' : '#b4c58d';
-    bestEl.innerHTML = `${best} <small>hub</small>`;
+    bestEl.innerHTML = `${best} <small>${mushroomForm(best)}</small>`;
     gameoverScreen.hidden = false;
     pauseIndicator.hidden = true;
     refreshLeaderboard();
@@ -741,6 +758,7 @@
 
   function updateHud() {
     scoreEl.textContent = String(score).padStart(2, '0');
+    scoreUnitEl.textContent = mushroomForm(score);
     energyNumberEl.innerHTML = `${Math.ceil(energy)}<span>%</span>`;
     energyFillEl.style.width = `${energy}%`;
     energyProgressEl.setAttribute('aria-valuenow', String(Math.round(energy)));
@@ -825,7 +843,7 @@
   });
   stage.addEventListener('pointercancel', () => { touchStart = null; });
 
-  bestEl.innerHTML = `${best} <small>hub</small>`;
+  bestEl.innerHTML = `${best} <small>${mushroomForm(best)}</small>`;
   buildScenery();
   window.addEventListener('resize', resize);
   updateHud();

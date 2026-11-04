@@ -30,7 +30,7 @@
         <div class="hud">
           <div class="hud-stat score-stat">
             <span class="hud-label">NASBÍRÁNO</span>
-            <span class="hud-value"><span class="mushroom-mini" aria-hidden="true">✿</span><span id="score">00</span><span class="hud-unit">hub</span></span>
+            <span class="hud-value"><span class="mushroom-mini" aria-hidden="true">✿</span><span id="score">00</span><span class="hud-unit" id="score-unit">hub</span></span>
           </div>
           <div class="hud-stat energy-stat">
             <div class="energy-heading"><span class="hud-label">ENERGIE</span><span class="energy-number" id="energy-number">100<span>%</span></span></div>
@@ -59,7 +59,7 @@
               <div class="screen-kicker danger-kicker"><span class="tiny-star">✳</span> KONEC VÝPRAVY</div>
               <h2>Dostihl <em>tě.</em></h2>
               <p>Ten nebezpečný jezevec tě nelítostně popravil.</p>
-              <div class="final-score"><span>NASBÍRÁNO HUB</span><strong id="final-score">0</strong><span id="record-message">Osobní rekord čeká.</span></div>
+              <div class="final-score"><span>NASBÍRÁNO</span><strong><span id="final-score">0</span> <small id="final-score-unit">hub</small></strong><span id="record-message">Osobní rekord čeká.</span></div>
               <section class="public-leaderboard" aria-labelledby="leaderboard-title">
                 <div class="leaderboard-heading"><span id="leaderboard-title">VEŘEJNÝ ŽEBŘÍČEK · TOP 5</span><button class="leaderboard-refresh" id="leaderboard-refresh" type="button" aria-label="Obnovit žebříček">↻</button></div>
                 <form class="score-form" id="score-form">
