@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="cs">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#0d1411" />
+    <meta name="description" content="Noční útěk českým lesem. Uhýbej pařezům, sbírej houby a nenech se chytit jezevcem." />
+    <title>Jezevec — noční útěk lesem</title>
+    <link rel="icon" href="./favicon.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="./game.css" />
+    <script src="./game.js" defer></script>
+  </head>
+  <body>
+    <main class="page-shell">
+      <header class="masthead">
+        <a class="brand" href="./" aria-label="Jezevec, úvodní obrazovka">
+          <span class="brand-mark" aria-hidden="true">
+            <svg viewBox="0 0 48 48" fill="none">
+              <path d="M7 27c4-9 12-15 21-15 8 0 13 5 13 12 0 8-7 13-16 13H13c-4 0-8-4-6-10Z" fill="#8c9188" stroke="#d7d5c8" stroke-width="1.4" />
+              <path d="M28 16c3 1 5 4 6 8-2 1-4 2-7 2s-6-1-8-2c1-4 4-7 9-8Z" fill="#eee9d9" />
+              <path d="M21 17c2 2 3 4 3 7m5-8c2 2 3 4 3 7" stroke="#282b29" stroke-width="2.1" stroke-linecap="round" />
+              <circle cx="33.5" cy="25" r="1.3" fill="#202421" />
+              <path d="M12 30c2 1 4 1 6 0m-4 6 1 3m5-3 1 3m11-5 1 3" stroke="#363a36" stroke-width="2" stroke-linecap="round" />
+            </svg>
+          </span>
+          <span class="brand-copy"><strong>Jezevec</strong><span>noční útěk lesem</span></span>
+        </a>
+        <div class="masthead-note"><span class="live-dot"></span> ZÁZNAM Z POLESÍ <span class="note-divider">/</span> 02:17</div>
+        <a class="how-link" href="#navod">Jak hrát <span aria-hidden="true">↘</span></a>
+      </header>
+
+      <section class="intro" aria-labelledby="game-title">
+        <div>
+          <p class="eyebrow"><span class="eyebrow-line"></span> ZÁPADNÍ HÁJ · 49° 12′ N</p>
+          <h1 id="game-title">V lese <em>nejsi sám.</em></h1>
+          <p class="intro-copy">Utíkej za houbami. Poslouchej kroky za zády.</p>
+        </div>
+        <div class="record-card" aria-label="Osobní rekord">
+          <span class="record-icon" aria-hidden="true">✳</span>
+          <span class="record-copy"><span>OSOBNÍ REKORD</span><strong id="best-score">0 <small>hub</small></strong></span>
+          <span class="record-local">V TOMTO PROHLÍŽEČI</span>
+        </div>
+      </section>
+
+      <section class="game-frame" aria-label="Hra Jezevec">
+        <div class="hud">
+          <div class="hud-stat score-stat">
+            <span class="hud-label">NASBÍRÁNO</span>
+            <span class="hud-value"><span class="mushroom-mini" aria-hidden="true">✿</span><span id="score">00</span><span class="hud-unit">hub</span></span>
+          </div>
+          <div class="hud-stat energy-stat">
+            <div class="energy-heading"><span class="hud-label">ENERGIE</span><span class="energy-number" id="energy-number">100<span>%</span></span></div>
+            <div class="energy-track" role="progressbar" aria-label="Energie" aria-valuemin="0" aria-valuemax="100" aria-valuenow="100" id="energy-progress"><span id="energy-fill"></span></div>
+          </div>
+          <div class="hud-stat chase-stat">
+            <div class="chase-heading"><span class="hud-label">ODSTUP OD JEZEVCE</span><span class="distance-number" id="distance-number">260 <small>m</small></span></div>
+            <div class="distance-track" aria-hidden="true"><span id="distance-fill"></span><span class="distance-badger">●</span></div>
+          </div>
+        </div>
+
+        <div class="stage" id="stage">
+          <canvas id="game" width="960" height="540" aria-label="Lesní stezka. Uhýbej překážkám, sbírej houby a uteč jezevci." role="img"></canvas>
+          <div class="screen screen-start" id="start-screen">
+            <div class="screen-card start-card">
+              <div class="screen-kicker"><span class="tiny-star">✳</span> NOC SE RYCHLE KRÁTÍ</div>
+              <h2>Jezevec<br /><em>je za tebou.</em></h2>
+              <p>Uhýbej pařezům, sbírej houby a drž si náskok. Až dojde energie, hledej zelenou láhev.</p>
+              <button class="primary-button" id="start-button" type="button"><span>Vyrazit do lesa</span><span class="button-arrow" aria-hidden="true">↗</span></button>
+              <div class="start-hint"><span class="keycap">←</span><span class="keycap">→</span><span class="hint-text">nebo A / D</span><span class="hint-dot">·</span><span>změna směru</span></div>
+            </div>
+            <div class="screen-stamp"><span>POZOR</span><strong>JEZEVCI</strong><i>✳</i></div>
+          </div>
+          <div class="screen screen-gameover" id="gameover-screen" hidden>
+            <div class="screen-card over-card">
+              <div class="screen-kicker danger-kicker"><span class="tiny-star">✳</span> KONEC VÝPRAVY</div>
+              <h2>Dostihl<br /><em>tě.</em></h2>
+              <p>Les znovu ztichl. Kolik hub se ti podařilo zachránit?</p>
+              <div class="final-score"><span>NASBÍRÁNO HUB</span><strong id="final-score">0</strong><span id="record-message">Osobní rekord čeká.</span></div>
+              <button class="primary-button" id="restart-button" type="button"><span>Zkusit to znovu</span><span class="button-arrow" aria-hidden="true">↗</span></button>
+              <div class="start-hint"><span class="hint-text">← →</span><span>znovu do lesa</span></div>
+            </div>
+          </div>
+          <div class="pause-indicator" id="pause-indicator" hidden><span>Ⅱ</span> POZASTAVENO <small>mezerník pro pokračování</small></div>
+          <div class="stage-caption"><span><i class="caption-dot"></i> NOČNÍ STEZKA</span><span id="run-clock">00:00</span></div>
+        </div>
+
+        <div class="game-foot">
+          <div class="foot-note"><span class="foot-mushroom" aria-hidden="true">✿</span><span>Houby zvyšují skóre</span></div>
+          <span class="foot-divider"></span>
+          <div class="foot-note"><span class="foot-bottle" aria-hidden="true">▮</span><span>Pivo doplní energii pod 50 %</span></div>
+          <div class="foot-right"><span class="keycap foot-key">SPACE</span><span>Pauza</span><span class="foot-sep">·</span><span class="keycap foot-key">ESC</span><span>Stop</span></div>
+        </div>
+      </section>
+
+      <footer class="page-footer" id="navod">
+        <div class="footer-title"><span class="footer-crosshair">+</span><span>POKYNY K PŘEŽITÍ</span></div>
+        <div class="instruction"><span class="instruction-number">01</span><span><strong>Měň směr</strong><small>Šipkami nebo klávesami A a D.</small></span></div>
+        <div class="instruction"><span class="instruction-number">02</span><span><strong>Šetři dech</strong><small>Nižší energie znamená pomalejší běh.</small></span></div>
+        <div class="instruction"><span class="instruction-number">03</span><span><strong>Nenech se chytit</strong><small>Pařezy tě zpomalí. Jezevec nečeká.</small></span></div>
+        <div class="footer-coordinates">LESNÍ SPRÁVA · 1997—∞</div>
+      </footer>
+      <p class="mobile-tip">Na telefonu klepni vlevo nebo vpravo, případně přejeď prstem.</p>
+    </main>
+  </body>
+</html>
