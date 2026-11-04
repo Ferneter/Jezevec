@@ -238,6 +238,11 @@
     playNoiseBurst(.34, 'bandpass', 520, .075);
   }
 
+  function playMushroomPickup() {
+    playSweepTone(660, 990, .18, .13, 'sine');
+    playSweepTone(880, 1320, .22, .1, 'sine', null, .07);
+  }
+
   function playBadgerCatch() {
     playNoiseBurst(.82, 'bandpass', 230, .34);
     playSweepTone(82, 34, .78, .3, 'sawtooth', 180);
@@ -930,6 +935,7 @@
       if (Math.abs(object.x - RUNNER_X) < 27 && object.lane === lane) {
         if (object.type === 'mushroom') {
           score += 1;
+          playMushroomPickup();
           flash = Math.max(flash, .2);
         } else if (object.type === 'beer') {
           energy = Math.min(100, energy + 38);
