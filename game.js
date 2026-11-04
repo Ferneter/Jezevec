@@ -3,6 +3,9 @@
 
   const canvas = document.getElementById('game');
   const ctx = canvas.getContext('2d');
+  const badgerSprite = new Image();
+  badgerSprite.addEventListener('load', () => draw());
+  badgerSprite.src = './badger.png';
   const stage = document.getElementById('stage');
   const startScreen = document.getElementById('start-screen');
   const gameoverScreen = document.getElementById('gameover-screen');
@@ -477,126 +480,19 @@
     ctx.restore();
   }
 
-  function drawBadger(x, y, scale, running = true) {
-    const s = scale;
-    const stride = running ? Math.sin(elapsed * 12) * 3 * s : 0;
-    ctx.save();
-    ctx.translate(x, y);
-    ctx.scale(s, s);
-    ctx.fillStyle = 'rgba(5, 7, 5, .42)';
-    ctx.beginPath();
-    ctx.ellipse(-7, 7, 86, 10, 0, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.strokeStyle = '#3a3b3a';
-    ctx.lineWidth = 3.5;
-    ctx.lineCap = 'round';
-    ctx.beginPath();
-    ctx.moveTo(-34, -1);
-    ctx.lineTo(-37 - stride, 8);
-    ctx.moveTo(-12, 0);
-    ctx.lineTo(-9 + stride, 8);
-    ctx.moveTo(7, 0);
-    ctx.lineTo(10 - stride, 8);
-    ctx.moveTo(25, -1);
-    ctx.lineTo(28 + stride, 7);
-    ctx.stroke();
-
-    // Long, loose outline and layered pencil strokes echo the hand-drawn reference.
-    ctx.fillStyle = '#8a8b88';
-    ctx.beginPath();
-    ctx.moveTo(-82, -5);
-    ctx.quadraticCurveTo(-54, -26, -24, -26);
-    ctx.quadraticCurveTo(5, -30, 32, -19);
-    ctx.lineTo(38, 1);
-    ctx.quadraticCurveTo(12, 10, -17, 8);
-    ctx.quadraticCurveTo(-55, 12, -79, 1);
-    ctx.closePath();
-    ctx.fill();
-
-    ctx.strokeStyle = '#4f5150';
-    ctx.lineWidth = 3;
-    ctx.beginPath();
-    ctx.moveTo(-81, -5);
-    ctx.quadraticCurveTo(-51, -29, -22, -25);
-    ctx.quadraticCurveTo(9, -30, 37, -17);
-    ctx.quadraticCurveTo(30, -7, 37, 1);
-    ctx.quadraticCurveTo(10, 11, -19, 8);
-    ctx.quadraticCurveTo(-54, 12, -79, 1);
-    ctx.stroke();
-
-    ctx.strokeStyle = 'rgba(222, 222, 212, .68)';
-    ctx.lineWidth = 2.2;
-    for (let i = 0; i < 13; i++) {
-      const startX = -73 + i * 7;
-      const startY = -7 - (i % 3) * 3;
-      ctx.beginPath();
-      ctx.moveTo(startX, startY);
-      ctx.quadraticCurveTo(startX + 20, -28 - (i % 4) * 2, startX + 41, -15 + (i % 3) * 2);
-      ctx.quadraticCurveTo(startX + 23, -4, startX - 1, 2 + (i % 2) * 2);
-      ctx.stroke();
-    }
-
-    ctx.strokeStyle = '#303130';
-    ctx.lineWidth = 4;
-    for (let i = 0; i < 6; i++) {
-      ctx.beginPath();
-      ctx.moveTo(2 + i * 4, -2 + (i % 2) * 2);
-      ctx.lineTo(-16 + i * 5 + stride * .4, 9 + (i % 3) * 2);
-      ctx.lineTo(7 + i * 3, 4);
-      ctx.stroke();
-    }
-
-    ctx.fillStyle = '#b8b8b3';
-    ctx.beginPath();
-    ctx.moveTo(-78, -5);
-    ctx.quadraticCurveTo(-93, -16, -109, -4);
-    ctx.quadraticCurveTo(-118, 2, -101, 2);
-    ctx.quadraticCurveTo(-88, -1, -78, 2);
-    ctx.fill();
-
-    ctx.fillStyle = '#ebe8df';
-    ctx.beginPath();
-    ctx.ellipse(48, -17, 25, 28, -.1, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.strokeStyle = '#4e4e4a';
-    ctx.lineWidth = 2.7;
-    ctx.stroke();
-
-    ctx.strokeStyle = '#171918';
-    ctx.lineWidth = 5;
-    ctx.lineCap = 'round';
-    ctx.beginPath();
-    ctx.moveTo(31, -40);
-    ctx.quadraticCurveTo(32, -31, 43, -19);
-    ctx.moveTo(54, -43);
-    ctx.quadraticCurveTo(54, -32, 59, -18);
-    ctx.moveTo(68, -36);
-    ctx.lineTo(66, -19);
-    ctx.stroke();
-
-    ctx.strokeStyle = '#292a28';
-    ctx.lineWidth = 3;
-    ctx.fillStyle = '#181a18';
-    ctx.beginPath();
-    ctx.arc(65, -8, 2, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.beginPath();
-    ctx.ellipse(75, -1, 7, 5, -.1, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.fillStyle = '#e7e4d9';
-    ctx.beginPath();
-    ctx.arc(73, -2, 1.1, 0, Math.PI * 2);
-    ctx.arc(77, -2, 1.1, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.restore();
+  function drawBadger(x, y, scale) {
+    if (!badgerSprite.complete || !badgerSprite.naturalWidth) return;
+    const width = 210 * scale;
+    const height = width * badgerSprite.naturalHeight / badgerSprite.naturalWidth;
+    ctx.drawImage(badgerSprite, x - width / 2, y - height * .9, width, height);
   }
 
   function drawChaser() {
     const closeness = clamp(1 - distance / 430, 0, 1);
     const scale = lerp(.68, 1.05, closeness);
     const y = laneY(lane, RUNNER_X) + 4;
-    const x = lerp(96, RUNNER_X - 76, closeness);
-    drawBadger(x, y, scale, state === 'running');
+    const x = lerp(110, RUNNER_X - 100, closeness);
+    drawBadger(x, y, scale);
   }
 
   function drawVignette() {
