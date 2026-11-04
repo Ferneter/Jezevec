@@ -813,8 +813,7 @@
         if (clearSpot) break;
       }
       if (!clearSpot) return false;
-    } else if (objects.some((object) => (object.type === 'mushroom' || object.type === 'beer')
-      && objectOverlaps(type, laneIndex, x, object))) {
+    } else if (objects.some((object) => objectOverlaps(type, laneIndex, x, object))) {
       return false;
     }
 
