@@ -54,7 +54,7 @@
   function mushroomForm(count) {
     const number = Math.abs(Math.trunc(Number(count) || 0));
     const lastTwo = number % 100;
-    if (lastTwo >= 12 && lastTwo <= 14) return 'hub';
+    if (lastTwo >= 11 && lastTwo <= 19) return 'hub';
     const lastDigit = number % 10;
     if (lastDigit === 1) return 'houba';
     if (lastDigit >= 2 && lastDigit <= 4) return 'houby';
