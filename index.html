@@ -54,26 +54,6 @@
             </div>
             <div class="screen-stamp"><span>POZOR</span><strong>JEZEVCI</strong><i>✳</i></div>
           </div>
-          <div class="screen screen-gameover" id="gameover-screen" hidden>
-            <div class="screen-card over-card">
-              <div class="screen-kicker danger-kicker"><span class="tiny-star">✳</span> KONEC VÝPRAVY</div>
-              <h2>Dostihl <em>tě.</em></h2>
-              <p>Ten nebezpečný jezevec tě nelítostně popravil.</p>
-              <div class="final-score"><span>NASBÍRÁNO</span><strong><span id="final-score">0</span> <small id="final-score-unit">hub</small></strong><span id="record-message">Osobní rekord čeká.</span></div>
-              <section class="public-leaderboard" aria-labelledby="leaderboard-title">
-                <div class="leaderboard-heading"><span id="leaderboard-title">VEŘEJNÝ ŽEBŘÍČEK · TOP 5</span><button class="leaderboard-refresh" id="leaderboard-refresh" type="button" aria-label="Obnovit žebříček">↻</button></div>
-                <form class="score-form" id="score-form">
-                  <label class="visually-hidden" for="player-name">Tvůj nick</label>
-                  <input id="player-name" name="nickname" type="text" maxlength="16" autocomplete="nickname" placeholder="Tvůj nick" required />
-                  <button id="score-submit" type="submit">Uložit skóre</button>
-                </form>
-                <p class="leaderboard-status" id="leaderboard-status" role="status" aria-live="polite">Veřejný žebříček čeká na připojení.</p>
-                <ol class="leaderboard-list" id="leaderboard-list"></ol>
-              </section>
-              <button class="primary-button" id="restart-button" type="button"><span>Zkusit to znovu</span><span class="button-arrow" aria-hidden="true">↗</span></button>
-              <div class="start-hint"><span class="hint-text">↑ ↓</span><span>změna stezky</span></div>
-            </div>
-          </div>
           <div class="pause-indicator" id="pause-indicator" hidden><span>Ⅱ</span> POZASTAVENO <small>mezerník pro pokračování</small></div>
           <div class="stage-caption"><span><i class="caption-dot"></i> NOČNÍ STEZKA</span><span id="run-clock">00:00</span></div>
         </div>
@@ -92,5 +72,26 @@
         </div>
       </section>
     </main>
+    <div class="screen screen-gameover" id="gameover-screen" hidden>
+      <div class="screen-card over-card">
+        <div class="gameover-art" aria-hidden="true"><img src="./badger.png" alt="" /></div>
+        <div class="gameover-content">
+          <h2 class="gameover-title">Konec výpravy</h2>
+          <p>Ten nebezpečný jezevec tě nelítostně popravil.</p>
+          <div class="final-score"><span>NASBÍRÁNO</span><strong><span id="final-score">0</span> <small id="final-score-unit">hub</small></strong><span id="record-message">Osobní rekord čeká.</span></div>
+          <section class="public-leaderboard" aria-labelledby="leaderboard-title">
+            <div class="leaderboard-heading"><span id="leaderboard-title">VEŘEJNÝ ŽEBŘÍČEK · TOP 5</span><button class="leaderboard-refresh" id="leaderboard-refresh" type="button" aria-label="Obnovit žebříček">↻</button></div>
+            <form class="score-form" id="score-form">
+              <label class="visually-hidden" for="player-name">Tvůj nick</label>
+              <input id="player-name" name="nickname" type="text" maxlength="16" autocomplete="nickname" placeholder="Tvůj nick" required />
+              <button id="score-submit" type="submit">Uložit skóre</button>
+            </form>
+            <p class="leaderboard-status" id="leaderboard-status" role="status" aria-live="polite">Veřejný žebříček čeká na připojení.</p>
+            <ol class="leaderboard-list" id="leaderboard-list"></ol>
+          </section>
+          <button class="primary-button" id="restart-button" type="button"><span>Zkusit to znovu</span><span class="button-arrow" aria-hidden="true">↗</span></button>
+        </div>
+      </div>
+    </div>
   </body>
 </html>
