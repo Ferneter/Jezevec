@@ -178,23 +178,30 @@
     scoreSubmitButton.disabled = true;
     setLeaderboardStatus('Ukládám skóre…');
     try {
-      const response = await fetch(`${leaderboardUrl}/rest/v1/jezevec_scores`, {
+      const response = await fetch(`${leaderboardUrl}/rest/v1/rpc/submit_jezevec_score`, {
         method: 'POST',
         headers: {
           apikey: leaderboardKey,
           Accept: 'application/json',
-          'Content-Type': 'application/json',
-          Prefer: 'return=minimal'
+          'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ nickname, score: Math.min(99999, Math.max(0, Math.floor(score))) })
+        body: JSON.stringify({
+          p_nickname: nickname,
+          p_score: Math.min(99999, Math.max(0, Math.floor(score)))
+        })
       });
       if (!response.ok) throw new Error('Score submission failed');
-      scoreSubmitted = true;
-      saveNickname(nickname);
-      await refreshLeaderboard();
-      setLeaderboardStatus('Skóre je uložené ve veřejném žebříčku.');
+      const updated = await response.json();
+      if (updated) {
+        scoreSubmitted = true;
+        saveNickname(nickname);
+        await refreshLeaderboard();
+        setLeaderboardStatus('Skóre je uložené ve veřejném žebříčku.');
+      } else {
+        setLeaderboardStatus(`Pod nickem „${nickname}“ už je stejné nebo vyšší skóre.`);
+      }
     } catch {
-      setLeaderboardStatus('Skóre se nepodařilo uložit. Zkus to znovu.', true);
+      setLeaderboardStatus('Skóre se nepodařilo uložit. Zkontroluj aktualizaci Supabase skriptu.', true);
     } finally {
       scoreSubmitButton.disabled = scoreSubmitted;
     }

@@ -28,8 +28,8 @@ Osobní rekord se ukládá lokálně v prohlížeči návštěvníka.
 ## Veřejný žebříček přes Supabase
 
 1. Vytvoř projekt v Supabase.
-2. V **SQL Editoru** spusť obsah souboru `supabase/leaderboard.sql`.
+2. V **SQL Editoru** spusť obsah souboru `supabase/leaderboard.sql`. Pokud už žebříček používáš, spusť aktualizovaný skript znovu.
 3. Zkopíruj Project URL a veřejný **publishable key** do `leaderboard-config.js`.
 4. Nahraj změny do větve `main`; GitHub Pages zveřejní žebříček.
 
-Tabulka dovoluje veřejné čtení a vkládání skóre přes Row Level Security. Protože hra běží v prohlížeči, výsledky nejsou odolné proti podvržení klientem.
+Žebříček dovoluje veřejné čtení. Nick se porovnává bez ohledu na velikost písmen a u každého nicku zůstane jen nejlepší skóre; stejné ani nižší skóre ho nepřepíše. Aktualizační skript sloučí případné starší duplicity a zachová nejvyšší výsledek. Protože hra běží v prohlížeči, výsledky nejsou odolné proti podvržení klientem.
