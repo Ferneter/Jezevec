@@ -566,11 +566,15 @@
     flash = Math.max(0, flash - dt * 2.4);
 
     if (spawnTimer <= 0) {
+      const difficultyLevel = Math.floor(elapsed / 20);
+      const mushroomChance = .24;
+      const obstacleChance = Math.min(.76, .54 + difficultyLevel * .055);
       const roll = Math.random();
-      if (roll < .24) addObject('mushroom');
-      else if (roll < .54) addObject('stump');
-      else if (roll < .78) addObject('log');
-      spawnTimer = rand(.7, 1.2) * clamp(1.08 - elapsed / 300, .72, 1.08);
+      if (roll < mushroomChance) addObject('mushroom');
+      else if (roll < mushroomChance + obstacleChance * .55) addObject('stump');
+      else if (roll < mushroomChance + obstacleChance) addObject('log');
+      const baseSpawnInterval = Math.max(.34, .95 * Math.pow(.9, difficultyLevel));
+      spawnTimer = rand(baseSpawnInterval * .75, baseSpawnInterval * 1.25);
     }
     if (energy < 50 && beerTimer <= 0 && !objects.some((object) => object.type === 'beer')) {
       if (Math.random() < .78) addObject('beer');
