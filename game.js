@@ -39,6 +39,9 @@
   const leaderboardRefreshButton = document.getElementById('leaderboard-refresh');
   const leaderboardStatus = document.getElementById('leaderboard-status');
   const leaderboardList = document.getElementById('leaderboard-list');
+  const soundToggleButton = document.getElementById('sound-toggle');
+  const soundVolumeInput = document.getElementById('sound-volume');
+  const soundValueEl = document.getElementById('sound-value');
 
   const W = 960;
   const H = 540;
@@ -47,6 +50,7 @@
   const LANES = [0, 1, 2];
   const LANE_SPACING = 46;
   const BEST_KEY = 'jezevec-best-score-v1';
+  const SOUND_VOLUME_KEY = 'jezevec-sound-volume-v1';
   const rand = (min, max) => min + Math.random() * (max - min);
   const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
   const lerp = (a, b, t) => a + (b - a) * t;
@@ -81,6 +85,15 @@
   let touchStart = null;
   let newRecord = false;
   let scoreSubmitted = false;
+  let soundVolume = readSoundVolume();
+  let previousSoundVolume = soundVolume || 38;
+  let audioContext = null;
+  let masterGain = null;
+  let soundtrackGain = null;
+  let soundtrackStarted = false;
+  let soundtrackTimer = null;
+  let soundtrackNoteIndex = 0;
+  let audioNoiseBuffer = null;
 
   playerNameInput.value = readNickname();
   scoreSubmitButton.disabled = !leaderboardReady;
@@ -103,6 +116,177 @@
 
   function saveNickname(value) {
     try { localStorage.setItem('jezevec-player-nickname-v1', value); } catch { /* private browsing can block storage */ }
+  }
+
+  function readSoundVolume() {
+    try {
+      const saved = localStorage.getItem(SOUND_VOLUME_KEY);
+      if (saved === null) return 38;
+      const value = Number(saved);
+      return Number.isFinite(value) ? clamp(Math.round(value), 0, 100) : 38;
+    } catch { return 38; }
+  }
+
+  function setSoundVolume(value, persist = true) {
+    soundVolume = clamp(Math.round(Number(value) || 0), 0, 100);
+    if (soundVolume > 0) previousSoundVolume = soundVolume;
+    soundVolumeInput.value = String(soundVolume);
+    soundValueEl.textContent = `${soundVolume} %`;
+    soundVolumeInput.setAttribute('aria-valuetext', `${soundVolume} %`);
+    soundToggleButton.textContent = soundVolume > 0 ? '♫' : '×';
+    soundToggleButton.setAttribute('aria-label', soundVolume > 0 ? 'Vypnout zvuk' : 'Zapnout zvuk');
+    soundToggleButton.setAttribute('aria-pressed', String(soundVolume === 0));
+    if (masterGain && audioContext) {
+      masterGain.gain.setTargetAtTime(soundVolume / 100, audioContext.currentTime, .035);
+    }
+    if (persist) {
+      try { localStorage.setItem(SOUND_VOLUME_KEY, String(soundVolume)); } catch { /* private browsing can block storage */ }
+    }
+  }
+
+  function ensureAudioContext() {
+    if (!audioContext) {
+      const AudioContextConstructor = window.AudioContext || window.webkitAudioContext;
+      if (!AudioContextConstructor) return null;
+      try {
+        audioContext = new AudioContextConstructor();
+        masterGain = audioContext.createGain();
+        masterGain.gain.value = soundVolume / 100;
+        masterGain.connect(audioContext.destination);
+      } catch {
+        audioContext = null;
+        masterGain = null;
+        return null;
+      }
+    }
+    if (audioContext.state === 'suspended') audioContext.resume().catch(() => {});
+    return audioContext;
+  }
+
+  function getAudioNoiseBuffer() {
+    if (!audioContext) return null;
+    if (!audioNoiseBuffer) {
+      const length = Math.floor(audioContext.sampleRate * 1.2);
+      audioNoiseBuffer = audioContext.createBuffer(1, length, audioContext.sampleRate);
+      const samples = audioNoiseBuffer.getChannelData(0);
+      for (let i = 0; i < length; i++) samples[i] = Math.random() * 2 - 1;
+    }
+    return audioNoiseBuffer;
+  }
+
+  function startSoundtrack() {
+    const audio = ensureAudioContext();
+    if (!audio || soundtrackStarted) return;
+    soundtrackStarted = true;
+
+    soundtrackGain = audio.createGain();
+    soundtrackGain.gain.value = .36;
+    soundtrackGain.connect(masterGain);
+
+    for (const [frequency, volume] of [[55, .15], [82.41, .105], [110, .07]]) {
+      const oscillator = audio.createOscillator();
+      const gain = audio.createGain();
+      oscillator.type = 'sine';
+      oscillator.frequency.value = frequency;
+      gain.gain.value = volume;
+      oscillator.connect(gain).connect(soundtrackGain);
+      oscillator.start();
+    }
+
+    const wind = audio.createBufferSource();
+    const windFilter = audio.createBiquadFilter();
+    const windGain = audio.createGain();
+    const windWave = audio.createOscillator();
+    const windWaveGain = audio.createGain();
+    wind.buffer = getAudioNoiseBuffer();
+    wind.loop = true;
+    windFilter.type = 'lowpass';
+    windFilter.frequency.value = 540;
+    windGain.gain.value = .085;
+    windWave.frequency.value = .09;
+    windWaveGain.gain.value = .035;
+    wind.connect(windFilter).connect(windGain).connect(soundtrackGain);
+    windWave.connect(windWaveGain).connect(windGain.gain);
+    wind.start();
+    windWave.start();
+
+    playSoundtrackNote();
+    soundtrackTimer = window.setInterval(playSoundtrackNote, 3600);
+  }
+
+  function playSoundtrackNote() {
+    if (!audioContext || !soundtrackGain || audioContext.state !== 'running') return;
+    const notes = [146.83, 174.61, 196, 164.81, 130.81, 146.83, 110];
+    const frequency = notes[soundtrackNoteIndex % notes.length];
+    soundtrackNoteIndex++;
+    const now = audioContext.currentTime;
+    const oscillator = audioContext.createOscillator();
+    const envelope = audioContext.createGain();
+    oscillator.type = 'sine';
+    oscillator.frequency.value = frequency;
+    oscillator.detune.value = rand(-5, 5);
+    envelope.gain.setValueAtTime(.0001, now);
+    envelope.gain.exponentialRampToValueAtTime(.13, now + .45);
+    envelope.gain.exponentialRampToValueAtTime(.0001, now + 3.3);
+    oscillator.connect(envelope).connect(soundtrackGain);
+    oscillator.start(now);
+    oscillator.stop(now + 3.35);
+  }
+
+  function playSweepTone(startFrequency, endFrequency, duration, volume, waveform = 'sine', lowpass = null, startDelay = 0) {
+    if (!audioContext || !masterGain || audioContext.state !== 'running') return;
+    const now = audioContext.currentTime + startDelay;
+    const oscillator = audioContext.createOscillator();
+    const envelope = audioContext.createGain();
+    oscillator.type = waveform;
+    oscillator.frequency.setValueAtTime(startFrequency, now);
+    oscillator.frequency.exponentialRampToValueAtTime(Math.max(1, endFrequency), now + duration);
+    envelope.gain.setValueAtTime(.0001, now);
+    envelope.gain.exponentialRampToValueAtTime(volume, now + .018);
+    envelope.gain.exponentialRampToValueAtTime(.0001, now + duration);
+    if (lowpass) {
+      const filter = audioContext.createBiquadFilter();
+      filter.type = 'lowpass';
+      filter.frequency.value = lowpass;
+      oscillator.connect(filter).connect(envelope).connect(masterGain);
+    } else {
+      oscillator.connect(envelope).connect(masterGain);
+    }
+    oscillator.start(now);
+    oscillator.stop(now + duration + .01);
+  }
+
+  function playNoiseBurst(duration, filterType, frequency, volume) {
+    if (!audioContext || !masterGain || audioContext.state !== 'running') return;
+    const now = audioContext.currentTime;
+    const noise = audioContext.createBufferSource();
+    const filter = audioContext.createBiquadFilter();
+    const envelope = audioContext.createGain();
+    noise.buffer = getAudioNoiseBuffer();
+    filter.type = filterType;
+    filter.frequency.value = frequency;
+    envelope.gain.setValueAtTime(volume, now);
+    envelope.gain.exponentialRampToValueAtTime(.0001, now + duration);
+    noise.connect(filter).connect(envelope).connect(masterGain);
+    noise.start(now);
+    noise.stop(now + duration);
+  }
+
+  function playWoodImpact() {
+    playNoiseBurst(.16, 'lowpass', 1050, .26);
+    playSweepTone(120, 42, .2, .25, 'triangle');
+  }
+
+  function playBeerDrink() {
+    playSweepTone(280, 105, .2, .15, 'sine');
+    playSweepTone(235, 92, .22, .15, 'sine', null, .14);
+    playSweepTone(195, 74, .24, .14, 'sine', null, .3);
+    playNoiseBurst(.34, 'bandpass', 520, .075);
+  }
+
+  function playBadgerCatch() {
+    playNoiseBurst(.82, 'bandpass', 230, .34);
+    playSweepTone(82, 34, .78, .3, 'sawtooth', 180);
   }
 
   function setLeaderboardStatus(message, isError = false) {
@@ -634,6 +818,16 @@
     objects.push({ type, lane: laneIndex, x, variant: Math.floor(rand(0, 2)), glow: rand(0, 1) });
   }
 
+  function findSafeLane(entryX, obstacleEndX) {
+    const occupiedLanes = new Set(objects
+      .filter((object) => (object.type === 'stump' || object.type === 'log')
+        && object.x >= entryX - 27
+        && object.x <= obstacleEndX + 27)
+      .map((object) => object.lane));
+    const safeLanes = LANES.filter((laneIndex) => !occupiedLanes.has(laneIndex));
+    return safeLanes.length ? safeLanes[Math.floor(rand(0, safeLanes.length))] : -1;
+  }
+
   function spawnPattern(difficultyLevel) {
     const entryX = W + 55;
     if (Math.random() < .18) {
@@ -641,26 +835,27 @@
       return;
     }
 
-    const firstLane = Math.floor(rand(0, LANES.length));
+    const obstacleEndX = entryX + 170;
+    const safeLane = findSafeLane(entryX, obstacleEndX);
+    if (safeLane < 0) return;
+    const obstacleLanes = LANES.filter((laneIndex) => laneIndex !== safeLane);
+    const firstLane = obstacleLanes[Math.floor(rand(0, obstacleLanes.length))];
     addObject(Math.random() < .55 ? 'stump' : 'log', firstLane, entryX);
-    const blockedLanes = [firstLane];
     const extraObstacleChance = Math.min(.62, .28 + difficultyLevel * .055);
 
     if (Math.random() < extraObstacleChance) {
-      const secondLane = (firstLane + (Math.random() < .5 ? 1 : 2)) % LANES.length;
+      const secondLane = obstacleLanes.find((laneIndex) => laneIndex !== firstLane);
       addObject(Math.random() < .55 ? 'stump' : 'log', secondLane, entryX + rand(125, 170));
-      blockedLanes.push(secondLane);
     }
 
     if (Math.random() < .36) {
-      const openLanes = LANES.filter((laneIndex) => !blockedLanes.includes(laneIndex));
-      const mushroomLane = openLanes[Math.floor(rand(0, openLanes.length))];
-      addObject('mushroom', mushroomLane, entryX + rand(65, 250));
+      addObject('mushroom', safeLane, entryX + rand(65, 160));
     }
   }
 
   function startGame() {
     state = 'running';
+    startSoundtrack();
     elapsed = 0;
     sceneryOffset = 0;
     score = 0;
@@ -685,6 +880,7 @@
   function finishGame() {
     if (state !== 'running') return;
     state = 'over';
+    playBadgerCatch();
     newRecord = score > best;
     if (newRecord) {
       best = score;
@@ -714,7 +910,7 @@
     flash = Math.max(0, flash - dt * 2.4);
 
     if (spawnTimer <= 0) {
-      const difficultyLevel = Math.floor(elapsed / 20);
+      const difficultyLevel = Math.floor(elapsed / 10);
       spawnPattern(difficultyLevel);
       const waveInterval = Math.max(.66, 1.2 * Math.pow(.92, difficultyLevel));
       spawnTimer = rand(waveInterval * .85, waveInterval * 1.15);
@@ -740,10 +936,12 @@
         } else if (object.type === 'beer') {
           energy = Math.min(100, energy + 38);
           distance = Math.min(MAX_DISTANCE, distance + 33);
+          playBeerDrink();
           flash = .5;
         } else {
           energy = Math.max(0, energy - 19);
           distance -= 16;
+          playWoodImpact();
           shake = 8;
           flash = .85;
         }
@@ -810,6 +1008,10 @@
     updateHud();
     draw();
   }
+
+  setSoundVolume(soundVolume, false);
+  soundVolumeInput.addEventListener('input', () => setSoundVolume(soundVolumeInput.value));
+  soundToggleButton.addEventListener('click', () => setSoundVolume(soundVolume === 0 ? previousSoundVolume : 0));
 
   document.getElementById('start-button').addEventListener('click', startGame);
   document.getElementById('restart-button').addEventListener('click', startGame);

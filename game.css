@@ -157,6 +157,12 @@ h2 em { font-size: .93em; }
 .foot-mushroom { color: #d58f78; font-size: 15px; }
 .foot-bottle { display: grid; width: 10px; height: 16px; place-items: center; border: 1px solid #7b9e69; border-top-width: 4px; border-radius: 3px 3px 2px 2px; color: transparent; box-shadow: inset 0 4px 0 rgba(130, 178, 95, .35); }
 .foot-divider { width: 1px; height: 18px; background: #39443a; }
+.audio-controls { display: flex; flex: 0 0 auto; align-items: center; gap: 6px; padding-left: 10px; border-left: 1px solid #39443a; }
+.sound-toggle { display: grid; width: 23px; height: 23px; place-items: center; padding: 0; border: 1px solid #465546; border-radius: 3px; color: #c7d7a5; background: #202b22; cursor: pointer; font: 13px var(--sans); }
+.sound-toggle[aria-pressed="true"] { color: #899486; }
+.sound-volume { width: 72px; height: 4px; margin: 0; accent-color: #a9c77b; cursor: pointer; }
+.sound-volume:focus-visible, .sound-toggle:focus-visible { outline: 2px solid #a9c77b; outline-offset: 3px; }
+.sound-value { min-width: 25px; color: #849184; font: 8px var(--mono); text-align: right; }
 .foot-right { display: flex; align-items: center; gap: 6px; margin-left: auto; color: #849184; font-size: 9px; }
 .foot-key { min-width: auto; height: 16px; font-size: 7px; }
 .foot-sep { color: #536052; margin: 0 3px; }
@@ -173,6 +179,8 @@ h2 em { font-size: .93em; }
   .hud-value { font-size: 20px; }
   .game-foot { gap: 10px; padding-right: 12px; padding-left: 12px; }
   .foot-note { gap: 5px; }
+  .audio-controls { margin-left: auto; }
+  .foot-right { margin-left: 0; }
   .foot-right { gap: 4px; font-size: 8px; }
   .screen-card { padding: 19px 22px 16px; }
   .start-card { transform: translateX(55%); }
@@ -220,6 +228,10 @@ h2 em { font-size: .93em; }
   .foot-note { gap: 5px; }
   .foot-mushroom { font-size: 12px; }
   .foot-divider { height: 13px; }
+  .audio-controls { gap: 5px; margin-left: 0; padding-left: 7px; }
+  .sound-toggle { width: 20px; height: 20px; font-size: 11px; }
+  .sound-volume { width: 58px; }
+  .sound-value { min-width: 22px; font-size: 7px; }
   .foot-right { gap: 4px; font-size: 7px; }
   .foot-key { height: 14px; font-size: 6px; }
   .foot-sep { margin: 0 1px; }
@@ -234,6 +246,8 @@ h2 em { font-size: .93em; }
   .record-card { padding: 6px 9px 8px; }
   .hud { min-height: 52px; }
   .game-foot { min-height: 32px; flex-wrap: wrap; gap: 6px 12px; padding: 4px 10px; }
+  .sound-toggle { width: 19px; height: 19px; }
+  .sound-volume { width: 58px; }
   .foot-right { margin-left: 0; }
   .stage-caption { bottom: 10px; }
 }
