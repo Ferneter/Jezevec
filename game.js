@@ -9,6 +9,9 @@
   const beerSprite = new Image();
   beerSprite.addEventListener('load', () => draw());
   beerSprite.src = './beer.png';
+  const runnerHeadSprite = new Image();
+  runnerHeadSprite.addEventListener('load', () => draw());
+  runnerHeadSprite.src = './runner-head.png';
   const stage = document.getElementById('stage');
   const startScreen = document.getElementById('start-screen');
   const gameoverScreen = document.getElementById('gameover-screen');
@@ -558,17 +561,23 @@
     ctx.ellipse(-12, -24, 4, 8, -.38, 0, Math.PI * 2);
     ctx.ellipse(17, -23, 4, 8, .38, 0, Math.PI * 2);
     ctx.fill();
-    ctx.fillStyle = '#c6a37d';
-    ctx.beginPath();
-    ctx.arc(8, -38, 10, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.fillStyle = '#d2aa4f';
-    ctx.beginPath();
-    ctx.arc(8, -41, 10, Math.PI, Math.PI * 2);
-    ctx.quadraticCurveTo(8, -51, -2, -41);
-    ctx.fill();
-    ctx.fillStyle = '#4d382c';
-    ctx.fillRect(-1, -41, 18, 2.3);
+    if (runnerHeadSprite.complete && runnerHeadSprite.naturalWidth > 0) {
+      const headHeight = 54;
+      const headWidth = headHeight * runnerHeadSprite.naturalWidth / runnerHeadSprite.naturalHeight;
+      ctx.drawImage(runnerHeadSprite, 8 - headWidth / 2, -76, headWidth, headHeight);
+    } else {
+      ctx.fillStyle = '#c6a37d';
+      ctx.beginPath();
+      ctx.arc(8, -38, 10, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = '#d2aa4f';
+      ctx.beginPath();
+      ctx.arc(8, -41, 10, Math.PI, Math.PI * 2);
+      ctx.quadraticCurveTo(8, -51, -2, -41);
+      ctx.fill();
+      ctx.fillStyle = '#4d382c';
+      ctx.fillRect(-1, -41, 18, 2.3);
+    }
     ctx.fillStyle = '#8c6f48';
     ctx.beginPath();
     ctx.moveTo(10, -21);
