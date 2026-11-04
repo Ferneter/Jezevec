@@ -214,6 +214,7 @@
     ctx.save();
     if (shake > 0) ctx.translate(rand(-shake, shake), rand(-shake * .5, shake * .5));
     drawSky();
+    drawGround();
     drawForest();
     drawTrail();
     drawMotes();
@@ -269,12 +270,19 @@
     ctx.fill();
   }
 
+  function drawGround() {
+    ctx.fillStyle = '#1b2c22';
+    ctx.fillRect(0, 250, W, H - 250);
+  }
+
   function drawForest() {
     for (const tree of trees) {
       const rawX = tree.x - sceneryOffset * tree.layer * .72;
       const x = ((rawX + 120) % (W + 240) + (W + 240)) % (W + 240) - 120;
       const size = tree.size * (tree.side < 0 ? .74 : 1.08) * 58;
-      const y = tree.side < 0 ? 266 : 525;
+      const pathTop = trackCenterAt(x) - 93;
+      const pathBottom = trackCenterAt(x) + 93;
+      const y = tree.side < 0 ? pathTop - 6 : pathBottom + size * 1.08 + 7;
       drawTree(x, y, size, tree.side, tree.shade, tree.sway + elapsed * .18);
     }
   }
@@ -317,9 +325,6 @@
   }
 
   function drawTrail() {
-    ctx.fillStyle = '#1b2c22';
-    ctx.fillRect(0, 250, W, 290);
-
     ctx.beginPath();
     for (let x = -20; x <= W + 20; x += 20) {
       const edge = trackCenterAt(x) - 93;
