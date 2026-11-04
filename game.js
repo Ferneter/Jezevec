@@ -872,6 +872,7 @@
     flash = 0;
     newRecord = false;
     scoreSubmitted = false;
+    scoreSubmitButton.disabled = !leaderboardReady;
     startScreen.hidden = true;
     gameoverScreen.hidden = true;
     pauseIndicator.hidden = true;
