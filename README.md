@@ -23,4 +23,13 @@ Pak otevři `http://localhost:8000`.
 
 V repozitáři je připravený workflow `.github/workflows/pages.yml`. Po nahrání projektu do GitHub repozitáře na větev `main` workflow stránku automaticky publikuje. V nastavení repozitáře otevři **Settings → Pages** a jako zdroj vyber **GitHub Actions**. Adresa hry se zobrazí v běhu workflow.
 
-Osobní rekord se ukládá lokálně v prohlížeči návštěvníka. Sdílená tabulka výsledků by vyžadovala samostatné online úložiště.
+Osobní rekord se ukládá lokálně v prohlížeči návštěvníka.
+
+## Veřejný žebříček přes Supabase
+
+1. Vytvoř projekt v Supabase.
+2. V **SQL Editoru** spusť obsah souboru `supabase/leaderboard.sql`.
+3. Zkopíruj Project URL a veřejný **publishable key** do `leaderboard-config.js`.
+4. Nahraj změny do větve `main`; GitHub Pages zveřejní žebříček.
+
+Tabulka dovoluje veřejné čtení a vkládání skóre přes Row Level Security. Protože hra běží v prohlížeči, výsledky nejsou odolné proti podvržení klientem.

@@ -24,6 +24,16 @@
   const distanceFillEl = document.getElementById('distance-fill');
   const distanceBadgerEl = document.querySelector('.distance-badger');
   const clockEl = document.getElementById('run-clock');
+  const leaderboardConfig = window.JEzevecLeaderboardConfig || {};
+  const leaderboardUrl = String(leaderboardConfig.projectUrl || '').replace(/\/+$/, '');
+  const leaderboardKey = String(leaderboardConfig.publishableKey || '').trim();
+  const leaderboardReady = Boolean(leaderboardUrl && leaderboardKey);
+  const playerNameInput = document.getElementById('player-name');
+  const scoreForm = document.getElementById('score-form');
+  const scoreSubmitButton = document.getElementById('score-submit');
+  const leaderboardRefreshButton = document.getElementById('leaderboard-refresh');
+  const leaderboardStatus = document.getElementById('leaderboard-status');
+  const leaderboardList = document.getElementById('leaderboard-list');
 
   const W = 960;
   const H = 540;
@@ -54,6 +64,12 @@
   let motes = [];
   let touchStart = null;
   let newRecord = false;
+  let scoreSubmitted = false;
+
+  playerNameInput.value = readNickname();
+  scoreSubmitButton.disabled = !leaderboardReady;
+  leaderboardRefreshButton.disabled = !leaderboardReady;
+  if (!leaderboardReady) setLeaderboardStatus('Žebříček čeká na připojení Supabase projektu.');
 
   function readBest() {
     try { return Number(localStorage.getItem(BEST_KEY)) || 0; }
@@ -62,6 +78,107 @@
 
   function saveBest(value) {
     try { localStorage.setItem(BEST_KEY, String(value)); } catch { /* private browsing can block storage */ }
+  }
+
+  function readNickname() {
+    try { return localStorage.getItem('jezevec-player-nickname-v1') || ''; }
+    catch { return ''; }
+  }
+
+  function saveNickname(value) {
+    try { localStorage.setItem('jezevec-player-nickname-v1', value); } catch { /* private browsing can block storage */ }
+  }
+
+  function setLeaderboardStatus(message, isError = false) {
+    leaderboardStatus.textContent = message;
+    leaderboardStatus.dataset.state = isError ? 'error' : '';
+  }
+
+  function renderLeaderboard(rows) {
+    leaderboardList.replaceChildren();
+    if (!rows.length) {
+      setLeaderboardStatus('Zatím tu nikdo není. Buď první!');
+      return;
+    }
+
+    rows.forEach((entry, index) => {
+      const row = document.createElement('li');
+      row.className = 'leaderboard-row';
+      const rank = document.createElement('span');
+      rank.className = 'leaderboard-rank';
+      rank.textContent = `${index + 1}.`;
+      const name = document.createElement('span');
+      name.className = 'leaderboard-name';
+      name.textContent = String(entry.nickname || 'Bezejmenný');
+      const value = document.createElement('span');
+      value.className = 'leaderboard-score';
+      value.textContent = `${Math.max(0, Number(entry.score) || 0)} hub`;
+      row.append(rank, name, value);
+      leaderboardList.append(row);
+    });
+    setLeaderboardStatus('Nejlepší běžci v lese.');
+  }
+
+  async function refreshLeaderboard() {
+    if (!leaderboardReady) {
+      setLeaderboardStatus('Žebříček čeká na připojení Supabase projektu.');
+      return;
+    }
+
+    leaderboardRefreshButton.disabled = true;
+    setLeaderboardStatus('Načítám výsledky…');
+    const query = new URLSearchParams({
+      select: 'nickname,score',
+      order: 'score.desc,created_at.asc',
+      limit: '5'
+    });
+
+    try {
+      const response = await fetch(`${leaderboardUrl}/rest/v1/jezevec_scores?${query}`, {
+        headers: { apikey: leaderboardKey, Accept: 'application/json' }
+      });
+      if (!response.ok) throw new Error('Leaderboard request failed');
+      renderLeaderboard(await response.json());
+    } catch {
+      setLeaderboardStatus('Žebříček se nepodařilo načíst.', true);
+    } finally {
+      leaderboardRefreshButton.disabled = false;
+    }
+  }
+
+  async function submitLeaderboardScore(event) {
+    event.preventDefault();
+    if (!leaderboardReady || scoreSubmitted) return;
+
+    const nickname = playerNameInput.value.trim().replace(/\s+/g, ' ');
+    if (!nickname || nickname.length > 16) {
+      setLeaderboardStatus('Nick musí mít 1 až 16 znaků.', true);
+      return;
+    }
+
+    scoreSubmitButton.disabled = true;
+    setLeaderboardStatus('Ukládám skóre…');
+    try {
+      const response = await fetch(`${leaderboardUrl}/rest/v1/jezevec_scores`, {
+        method: 'POST',
+        headers: {
+          apikey: leaderboardKey,
+          Accept: 'application/json',
+          'Content-Type': 'application/json',
+          Prefer: 'return=minimal'
+        },
+        body: JSON.stringify({ nickname, score: Math.min(99999, Math.max(0, Math.floor(score))) })
+      });
+      if (!response.ok) throw new Error('Score submission failed');
+      scoreSubmitted = true;
+      saveNickname(nickname);
+      await refreshLeaderboard();
+      setLeaderboardStatus('Skóre je uložené ve veřejném žebříčku.');
+    } catch {
+      setLeaderboardStatus('Skóre se nepodařilo uložit. Zkus to znovu.', true);
+    } finally {
+      scoreSubmitButton.disabled = scoreSubmitted;
+    }
   }
 
   function buildScenery() {
@@ -528,6 +645,7 @@
     shake = 0;
     flash = 0;
     newRecord = false;
+    scoreSubmitted = false;
     startScreen.hidden = true;
     gameoverScreen.hidden = true;
     pauseIndicator.hidden = true;
@@ -550,6 +668,7 @@
     bestEl.innerHTML = `${best} <small>hub</small>`;
     gameoverScreen.hidden = false;
     pauseIndicator.hidden = true;
+    refreshLeaderboard();
     draw();
   }
 
@@ -664,7 +783,10 @@
 
   document.getElementById('start-button').addEventListener('click', startGame);
   document.getElementById('restart-button').addEventListener('click', startGame);
+  scoreForm.addEventListener('submit', submitLeaderboardScore);
+  leaderboardRefreshButton.addEventListener('click', refreshLeaderboard);
   window.addEventListener('keydown', (event) => {
+    if (event.target instanceof Element && event.target.matches('input, textarea, select')) return;
     const key = event.key.toLowerCase();
     if (['arrowup', 'arrowdown', ' ', 'escape'].includes(key)) event.preventDefault();
     if (key === 'arrowup' || key === 'w') changeLane(-1);
