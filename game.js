@@ -186,17 +186,15 @@
 
   function buildScenery() {
     trees = [];
-    for (let side of [-1, 1]) {
-      for (let i = 0; i < 15; i++) {
-        trees.push({
-          side,
-          x: rand(-80, W + 80),
-          size: rand(.6, 1.7),
-          shade: Math.floor(rand(0, 4)),
-          layer: rand(.35, 1.15),
-          sway: rand(0, Math.PI * 2)
-        });
-      }
+    for (let i = 0; i < 20; i++) {
+      trees.push({
+        side: -1,
+        x: rand(-80, W + 80),
+        size: rand(.6, 1.7),
+        shade: Math.floor(rand(0, 4)),
+        layer: rand(.35, 1.15),
+        sway: rand(0, Math.PI * 2)
+      });
     }
     motes = Array.from({ length: 34 }, () => ({ x: rand(0, W), y: rand(22, 260), r: rand(.6, 2.1), speed: rand(5, 16), phase: rand(0, 8) }));
   }
@@ -292,10 +290,6 @@
     const trunkWidth = size * .12;
     const trunkHeight = size * .72;
     const lean = Math.sin(sway) * size * .035 * side;
-    ctx.fillStyle = 'rgba(7, 12, 9, .3)';
-    ctx.beginPath();
-    ctx.ellipse(x, y + 3, size * .48, size * .1, 0, 0, Math.PI * 2);
-    ctx.fill();
     ctx.fillStyle = shade % 2 ? '#302e25' : '#3b3428';
     ctx.beginPath();
     ctx.moveTo(x - trunkWidth / 2, y - trunkHeight * .1);
