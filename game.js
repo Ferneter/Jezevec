@@ -6,6 +6,9 @@
   const badgerSprite = new Image();
   badgerSprite.addEventListener('load', () => draw());
   badgerSprite.src = './badger.png';
+  const beerSprite = new Image();
+  beerSprite.addEventListener('load', () => draw());
+  beerSprite.src = './beer.png';
   const stage = document.getElementById('stage');
   const startScreen = document.getElementById('start-screen');
   const gameoverScreen = document.getElementById('gameover-screen');
@@ -328,44 +331,21 @@
     const s = scale;
     ctx.save();
     ctx.translate(x, y);
-    const aura = ctx.createRadialGradient(0, -5 * s, 2, 0, -5 * s, 34 * s);
+    const height = 66 * s;
+    const aura = ctx.createRadialGradient(0, -height * .52, 2, 0, -height * .52, 42 * s);
     aura.addColorStop(0, `rgba(164, 210, 113, ${.38 + glow * .12})`);
     aura.addColorStop(1, 'rgba(164, 210, 113, 0)');
     ctx.fillStyle = aura;
     ctx.beginPath();
-    ctx.arc(0, -5 * s, 34 * s, 0, Math.PI * 2);
+    ctx.arc(0, -height * .52, 42 * s, 0, Math.PI * 2);
     ctx.fill();
     ctx.fillStyle = 'rgba(5, 8, 6, .4)';
     ctx.beginPath();
-    ctx.ellipse(0, 8 * s, 12 * s, 4 * s, 0, 0, Math.PI * 2);
+    ctx.ellipse(0, 3 * s, 12 * s, 4 * s, 0, 0, Math.PI * 2);
     ctx.fill();
-    ctx.fillStyle = '#3b814b';
-    ctx.beginPath();
-    ctx.moveTo(-8 * s, 0);
-    ctx.quadraticCurveTo(-9 * s, -5 * s, -6 * s, -8 * s);
-    ctx.lineTo(-4 * s, -12 * s);
-    ctx.lineTo(-4 * s, -20 * s);
-    ctx.lineTo(4 * s, -20 * s);
-    ctx.lineTo(4 * s, -12 * s);
-    ctx.lineTo(7 * s, -8 * s);
-    ctx.quadraticCurveTo(10 * s, -4 * s, 8 * s, 0);
-    ctx.lineTo(7 * s, 7 * s);
-    ctx.quadraticCurveTo(0, 11 * s, -7 * s, 7 * s);
-    ctx.closePath();
-    ctx.fill();
-    ctx.strokeStyle = '#94bb78';
-    ctx.lineWidth = Math.max(1, s * 1.4);
-    ctx.stroke();
-    ctx.fillStyle = '#bbc995';
-    ctx.fillRect(-4 * s, -21 * s, 8 * s, 3 * s);
-    ctx.fillStyle = '#d9d8a4';
-    ctx.beginPath();
-    ctx.roundRect(-6 * s, -6 * s, 12 * s, 8 * s, 1.5 * s);
-    ctx.fill();
-    ctx.fillStyle = '#325d3d';
-    ctx.font = `bold ${6 * s}px ${getComputedStyle(document.body).fontFamily}`;
-    ctx.textAlign = 'center';
-    ctx.fillText('B', 0, 0);
+    if (beerSprite.complete && beerSprite.naturalWidth > 0) {
+      ctx.drawImage(beerSprite, -height / 2, -height, height, height);
+    }
     ctx.restore();
   }
 
