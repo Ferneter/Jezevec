@@ -90,9 +90,7 @@
   let audioContext = null;
   let masterGain = null;
   let soundtrackGain = null;
-  let soundtrackStarted = false;
-  let soundtrackTimer = null;
-  let soundtrackNoteIndex = 0;
+  let soundtrackElement = null;
   let audioNoiseBuffer = null;
 
   playerNameInput.value = readNickname();
@@ -176,61 +174,17 @@
 
   function startSoundtrack() {
     const audio = ensureAudioContext();
-    if (!audio || soundtrackStarted) return;
-    soundtrackStarted = true;
-
-    soundtrackGain = audio.createGain();
-    soundtrackGain.gain.value = .36;
-    soundtrackGain.connect(masterGain);
-
-    for (const [frequency, volume] of [[55, .15], [82.41, .105], [110, .07]]) {
-      const oscillator = audio.createOscillator();
-      const gain = audio.createGain();
-      oscillator.type = 'sine';
-      oscillator.frequency.value = frequency;
-      gain.gain.value = volume;
-      oscillator.connect(gain).connect(soundtrackGain);
-      oscillator.start();
+    if (!audio) return;
+    if (!soundtrackElement) {
+      soundtrackElement = new Audio('./mixkit-horror-ambience-2482.wav');
+      soundtrackElement.loop = true;
+      soundtrackElement.preload = 'auto';
+      soundtrackGain = audio.createGain();
+      soundtrackGain.gain.value = .44;
+      const soundtrackSource = audio.createMediaElementSource(soundtrackElement);
+      soundtrackSource.connect(soundtrackGain).connect(masterGain);
     }
-
-    const wind = audio.createBufferSource();
-    const windFilter = audio.createBiquadFilter();
-    const windGain = audio.createGain();
-    const windWave = audio.createOscillator();
-    const windWaveGain = audio.createGain();
-    wind.buffer = getAudioNoiseBuffer();
-    wind.loop = true;
-    windFilter.type = 'lowpass';
-    windFilter.frequency.value = 540;
-    windGain.gain.value = .085;
-    windWave.frequency.value = .09;
-    windWaveGain.gain.value = .035;
-    wind.connect(windFilter).connect(windGain).connect(soundtrackGain);
-    windWave.connect(windWaveGain).connect(windGain.gain);
-    wind.start();
-    windWave.start();
-
-    playSoundtrackNote();
-    soundtrackTimer = window.setInterval(playSoundtrackNote, 3600);
-  }
-
-  function playSoundtrackNote() {
-    if (!audioContext || !soundtrackGain || audioContext.state !== 'running') return;
-    const notes = [146.83, 174.61, 196, 164.81, 130.81, 146.83, 110];
-    const frequency = notes[soundtrackNoteIndex % notes.length];
-    soundtrackNoteIndex++;
-    const now = audioContext.currentTime;
-    const oscillator = audioContext.createOscillator();
-    const envelope = audioContext.createGain();
-    oscillator.type = 'sine';
-    oscillator.frequency.value = frequency;
-    oscillator.detune.value = rand(-5, 5);
-    envelope.gain.setValueAtTime(.0001, now);
-    envelope.gain.exponentialRampToValueAtTime(.13, now + .45);
-    envelope.gain.exponentialRampToValueAtTime(.0001, now + 3.3);
-    oscillator.connect(envelope).connect(soundtrackGain);
-    oscillator.start(now);
-    oscillator.stop(now + 3.35);
+    if (soundtrackElement.paused) soundtrackElement.play().catch(() => {});
   }
 
   function playSweepTone(startFrequency, endFrequency, duration, volume, waveform = 'sine', lowpass = null, startDelay = 0) {
@@ -814,8 +768,53 @@
     ctx.fillRect(0, 0, W, H);
   }
 
+  function objectHalfWidth(type) {
+    if (type === 'beer') return 33;
+    if (type === 'log') return 31;
+    if (type === 'mushroom') return 16;
+    return 18;
+  }
+
+  function objectVerticalBounds(type, laneIndex, x) {
+    const baseline = laneY(laneIndex, x) + 4;
+    if (type === 'beer') return { top: baseline - 68, bottom: baseline };
+    if (type === 'mushroom') return { top: baseline - 18, bottom: baseline + 4 };
+    if (type === 'log') return { top: baseline - 17, bottom: baseline + 10 };
+    return { top: baseline - 15, bottom: baseline + 9 };
+  }
+
+  function objectOverlaps(type, laneIndex, x, other) {
+    if (Math.abs(other.x - x) >= objectHalfWidth(type) + objectHalfWidth(other.type) + 4) return false;
+    const bounds = objectVerticalBounds(type, laneIndex, x);
+    const otherBounds = objectVerticalBounds(other.type, other.lane, other.x);
+    return bounds.top < otherBounds.bottom && bounds.bottom > otherBounds.top;
+  }
+
   function addObject(type, laneIndex = Math.floor(rand(0, LANES.length)), x = W + 55) {
+    const isPickup = type === 'mushroom' || type === 'beer';
+    if (isPickup) {
+      const laneChoices = [laneIndex, ...LANES.filter((laneIndexOption) => laneIndexOption !== laneIndex)];
+      const xOffsets = [0, -72, 72, -144, 144, -216, 216, -288, 288, -360, 360];
+      let clearSpot = false;
+      for (const offset of xOffsets) {
+        for (const candidateLane of laneChoices) {
+          const candidateX = x + offset;
+          if (objects.some((object) => objectOverlaps(type, candidateLane, candidateX, object))) continue;
+          laneIndex = candidateLane;
+          x = candidateX;
+          clearSpot = true;
+          break;
+        }
+        if (clearSpot) break;
+      }
+      if (!clearSpot) return false;
+    } else if (objects.some((object) => (object.type === 'mushroom' || object.type === 'beer')
+      && objectOverlaps(type, laneIndex, x, object))) {
+      return false;
+    }
+
     objects.push({ type, lane: laneIndex, x, variant: Math.floor(rand(0, 2)), glow: rand(0, 1) });
+    return true;
   }
 
   function findSafeLane(entryX, obstacleEndX) {
@@ -910,14 +909,13 @@
     flash = Math.max(0, flash - dt * 2.4);
 
     if (spawnTimer <= 0) {
-      const difficultyLevel = Math.floor(elapsed / 10);
+      const difficultyLevel = Math.floor(elapsed / 5);
       spawnPattern(difficultyLevel);
       const waveInterval = Math.max(.66, 1.2 * Math.pow(.92, difficultyLevel));
       spawnTimer = rand(waveInterval * .85, waveInterval * 1.15);
     }
     if (energy < 50 && beerTimer <= 0 && !objects.some((object) => object.type === 'beer')) {
-      addObject('beer');
-      beerTimer = rand(4.4, 7.8);
+      beerTimer = addObject('beer') ? rand(4.4, 7.8) : .25;
     }
 
     const trailSpeed = 112 + energy * .98 + Math.min(34, elapsed * .18);
