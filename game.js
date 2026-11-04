@@ -21,6 +21,9 @@
 
   const W = 960;
   const H = 540;
+  const RUNNER_X = 310;
+  const LANES = [0, 1, 2];
+  const LANE_SPACING = 46;
   const BEST_KEY = 'jezevec-best-score-v1';
   const rand = (min, max) => min + Math.random() * (max - min);
   const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
@@ -60,16 +63,15 @@
       for (let i = 0; i < 15; i++) {
         trees.push({
           side,
-          y: rand(-40, H + 50),
-          x: rand(.02, .28),
+          x: rand(-80, W + 80),
           size: rand(.6, 1.7),
           shade: Math.floor(rand(0, 4)),
-          layer: rand(.45, 1.05),
+          layer: rand(.35, 1.15),
           sway: rand(0, Math.PI * 2)
         });
       }
     }
-    motes = Array.from({ length: 34 }, () => ({ x: rand(110, 850), y: rand(30, H), r: rand(.6, 2.1), speed: rand(5, 16), phase: rand(0, 8) }));
+    motes = Array.from({ length: 34 }, () => ({ x: rand(0, W), y: rand(22, 260), r: rand(.6, 2.1), speed: rand(5, 16), phase: rand(0, 8) }));
   }
 
   function resize() {
@@ -88,10 +90,10 @@
     drawForest();
     drawTrail();
     drawMotes();
-    const ordered = [...objects].sort((a, b) => a.y - b.y);
+    const ordered = [...objects].sort((a, b) => a.x - b.x);
     for (const object of ordered) drawObject(object);
     if (state !== 'over') drawRunner();
-    if (state === 'running' || state === 'paused' || state === 'over') drawChaser();
+    drawChaser();
     drawVignette();
     if (flash > 0) {
       ctx.fillStyle = `rgba(232, 126, 97, ${flash * .12})`;
@@ -142,12 +144,11 @@
 
   function drawForest() {
     for (const tree of trees) {
-      const travel = (sceneryOffset * tree.layer + tree.y + 80) % (H + 100) - 50;
-      const perspective = .25 + travel / H * .95;
-      const size = tree.size * perspective * 60;
-      const sideDistance = 48 + tree.x * 470 * perspective;
-      const x = tree.side < 0 ? sideDistance - size * .28 : W - sideDistance + size * .28;
-      drawTree(x, travel, size, tree.side, tree.shade, tree.sway + elapsed * .18);
+      const rawX = tree.x - sceneryOffset * tree.layer * .72;
+      const x = ((rawX + 120) % (W + 240) + (W + 240)) % (W + 240) - 120;
+      const size = tree.size * (tree.side < 0 ? .74 : 1.08) * 58;
+      const y = tree.side < 0 ? 266 : 525;
+      drawTree(x, y, size, tree.side, tree.shade, tree.sway + elapsed * .18);
     }
   }
 
@@ -190,72 +191,83 @@
 
   function drawTrail() {
     ctx.fillStyle = '#1b2c22';
-    ctx.beginPath();
-    ctx.moveTo(0, 236);
-    ctx.lineTo(394, 169);
-    ctx.lineTo(566, 169);
-    ctx.lineTo(W, 236);
-    ctx.lineTo(W, H);
-    ctx.lineTo(0, H);
-    ctx.closePath();
-    ctx.fill();
+    ctx.fillRect(0, 250, W, 290);
 
     ctx.beginPath();
-    ctx.moveTo(444, 168);
-    ctx.lineTo(516, 168);
-    ctx.quadraticCurveTo(639, 328, 823, H);
-    ctx.lineTo(137, H);
-    ctx.quadraticCurveTo(323, 328, 444, 168);
+    for (let x = -20; x <= W + 20; x += 20) {
+      const edge = trackCenterAt(x) - 93;
+      if (x === -20) ctx.moveTo(x, edge);
+      else ctx.lineTo(x, edge);
+    }
+    for (let x = W + 20; x >= -20; x -= 20) ctx.lineTo(x, trackCenterAt(x) + 93);
     ctx.closePath();
-    const dirt = ctx.createLinearGradient(0, 168, 0, H);
+    const dirt = ctx.createLinearGradient(0, 265, 0, 465);
     dirt.addColorStop(0, '#30392c');
     dirt.addColorStop(.5, '#403e30');
     dirt.addColorStop(1, '#514738');
     ctx.fillStyle = dirt;
     ctx.fill();
 
-    ctx.strokeStyle = 'rgba(154, 163, 120, .2)';
+    ctx.strokeStyle = 'rgba(154, 163, 120, .22)';
     ctx.lineWidth = 2;
-    ctx.beginPath();
-    ctx.moveTo(444, 168);
-    ctx.quadraticCurveTo(323, 328, 137, H);
-    ctx.moveTo(516, 168);
-    ctx.quadraticCurveTo(639, 328, 823, H);
-    ctx.stroke();
-
-    const moving = (sceneryOffset * .92) % 92;
-    for (let i = 0; i < 12; i++) {
-      const y = 185 + ((i * 57 + moving) % 370);
-      const t = (y - 168) / (H - 168);
-      const width = lerp(3, 90, t);
-      const center = 480 + Math.sin(t * 2.2) * 7;
-      ctx.fillStyle = `rgba(184, 183, 139, ${.045 + t * .07})`;
-      ctx.fillRect(center - width / 2, y, width, Math.max(1, t * 3));
+    for (const edgeOffset of [-93, 93]) {
+      ctx.beginPath();
+      for (let x = -20; x <= W + 20; x += 20) {
+        const y = trackCenterAt(x) + edgeOffset;
+        if (x === -20) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+      }
+      ctx.stroke();
     }
 
-    for (let i = 0; i < 24; i++) {
-      const y = 195 + ((i * 67 + sceneryOffset * .7) % 370);
-      const t = (y - 168) / (H - 168);
-      const edge = lerp(62, 310, t);
-      const x = i % 2 === 0 ? 480 - edge : 480 + edge;
-      ctx.fillStyle = `rgba(190, 184, 140, ${.12 * t})`;
+    ctx.save();
+    ctx.beginPath();
+    for (let x = -20; x <= W + 20; x += 20) {
+      const y = trackCenterAt(x) - 90;
+      if (x === -20) ctx.moveTo(x, y);
+      else ctx.lineTo(x, y);
+    }
+    for (let x = W + 20; x >= -20; x -= 20) ctx.lineTo(x, trackCenterAt(x) + 90);
+    ctx.closePath();
+    ctx.clip();
+
+    for (let i = 0; i < 22; i++) {
+      const x = ((i * 67 - sceneryOffset * .9) % (W + 80) + W + 80) % (W + 80) - 40;
+      const y = trackCenterAt(x) + Math.sin(i * 4.1) * 64;
+      ctx.fillStyle = `rgba(190, 184, 140, ${.09 + (i % 3) * .025})`;
       ctx.beginPath();
-      ctx.ellipse(x, y, t * 3 + 1, t * 1.2 + .5, .25, 0, Math.PI * 2);
+      ctx.ellipse(x, y, 3 + (i % 3), 1.5, -.2, 0, Math.PI * 2);
       ctx.fill();
     }
 
-    const fog = ctx.createLinearGradient(0, 168, 0, 300);
-    fog.addColorStop(0, 'rgba(191, 203, 163, .15)');
+    for (let laneIndex = 0; laneIndex < 2; laneIndex++) {
+      const offset = laneIndex === 0 ? -LANE_SPACING / 2 : LANE_SPACING / 2;
+      ctx.strokeStyle = 'rgba(206, 198, 150, .09)';
+      ctx.lineWidth = 1;
+      ctx.setLineDash([16, 28]);
+      ctx.lineDashOffset = sceneryOffset * .8;
+      ctx.beginPath();
+      for (let x = -20; x <= W + 20; x += 20) {
+        const y = trackCenterAt(x) + offset;
+        if (x === -20) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+      }
+      ctx.stroke();
+    }
+    ctx.restore();
+
+    const fog = ctx.createLinearGradient(0, 190, 0, 305);
+    fog.addColorStop(0, 'rgba(191, 203, 163, .1)');
     fog.addColorStop(1, 'rgba(191, 203, 163, 0)');
     ctx.fillStyle = fog;
-    ctx.fillRect(356, 155, 248, 170);
+    ctx.fillRect(0, 185, W, 150);
   }
 
   function drawMotes() {
     for (const mote of motes) {
       const drift = Math.sin(elapsed * .4 + mote.phase) * 20;
-      const x = mote.x + drift;
-      const y = (mote.y + sceneryOffset * .12 * mote.speed) % H;
+      const x = ((mote.x - sceneryOffset * .08 * mote.speed + drift) % W + W) % W;
+      const y = mote.y + Math.sin(elapsed * .4 + mote.phase) * 5;
       ctx.fillStyle = `rgba(222, 226, 170, ${.13 + Math.sin(elapsed + mote.phase) ** 2 * .38})`;
       ctx.beginPath();
       ctx.arc(x, y, mote.r, 0, Math.PI * 2);
@@ -263,17 +275,19 @@
     }
   }
 
-  function pathPoint(laneIndex, y) {
-    const t = clamp((y - 168) / (H - 168), 0, 1.12);
-    const spread = lerp(0, 222, t);
-    return 480 + (laneIndex - 1) * spread;
+  function trackCenterAt(x) {
+    const phase = x + sceneryOffset * .28;
+    return 358 + Math.sin(phase / 172) * 18 + Math.sin(phase / 91) * 8;
+  }
+
+  function laneY(laneIndex, x = RUNNER_X) {
+    return trackCenterAt(x) + (laneIndex - 1) * LANE_SPACING;
   }
 
   function drawObject(object) {
-    const y = object.y;
-    const t = clamp((y - 168) / (H - 168), 0, 1.15);
-    const x = pathPoint(object.lane, y);
-    const scale = .28 + t * .95;
+    const x = object.x;
+    const y = laneY(object.lane, x) + 4;
+    const scale = object.type === 'log' ? .95 : .88;
     if (object.type === 'mushroom') drawMushroom(x, y, scale, object.variant);
     else if (object.type === 'beer') drawBeer(x, y, scale, object.glow);
     else drawStump(x, y, scale, object.type);
@@ -403,161 +417,211 @@
   }
 
   function drawRunner() {
-    const x = pathPoint(lane, 415);
-    const y = 419;
+    const x = RUNNER_X;
+    const y = laneY(lane, x);
     const bob = state === 'running' ? Math.sin(elapsed * 13) * 2.2 : 0;
-    const stride = state === 'running' ? Math.sin(elapsed * 13) * 4.5 : 0;
+    const stride = state === 'running' ? Math.sin(elapsed * 13) * 5 : 0;
     ctx.save();
     ctx.translate(x, y + bob);
     ctx.fillStyle = 'rgba(5, 8, 6, .48)';
     ctx.beginPath();
-    ctx.ellipse(0, 21, 22, 8, 0, 0, Math.PI * 2);
+    ctx.ellipse(0, 4, 23, 8, 0, 0, Math.PI * 2);
     ctx.fill();
     ctx.strokeStyle = '#313632';
-    ctx.lineWidth = 8;
+    ctx.lineWidth = 7;
     ctx.lineCap = 'round';
     ctx.beginPath();
-    ctx.moveTo(-7, 12);
-    ctx.lineTo(-10 - stride, 23);
-    ctx.moveTo(7, 12);
-    ctx.lineTo(10 + stride, 23);
+    ctx.moveTo(-2, -2);
+    ctx.lineTo(-8 - stride, 8);
+    ctx.moveTo(10, -1);
+    ctx.lineTo(12 + stride, 8);
     ctx.stroke();
     ctx.strokeStyle = '#aea78e';
-    ctx.lineWidth = 4;
+    ctx.lineWidth = 3.5;
     ctx.beginPath();
-    ctx.moveTo(-13 - stride, 24);
-    ctx.lineTo(-7 - stride, 24);
-    ctx.moveTo(7 + stride, 24);
-    ctx.lineTo(14 + stride, 24);
+    ctx.moveTo(-11 - stride, 9);
+    ctx.lineTo(-5 - stride, 9);
+    ctx.moveTo(10 + stride, 9);
+    ctx.lineTo(17 + stride, 9);
     ctx.stroke();
     ctx.fillStyle = '#9b5944';
     ctx.beginPath();
-    ctx.moveTo(-13, -4);
-    ctx.quadraticCurveTo(-16, -2, -14, 12);
-    ctx.quadraticCurveTo(0, 20, 14, 12);
-    ctx.lineTo(12, -5);
-    ctx.quadraticCurveTo(0, -11, -13, -4);
+    ctx.moveTo(-9, -31);
+    ctx.quadraticCurveTo(-15, -26, -13, -8);
+    ctx.quadraticCurveTo(-3, -1, 17, -7);
+    ctx.lineTo(15, -27);
+    ctx.quadraticCurveTo(3, -34, -9, -31);
     ctx.fill();
     ctx.fillStyle = '#bf7859';
     ctx.beginPath();
-    ctx.ellipse(-15, 3, 4, 9, -.38, 0, Math.PI * 2);
-    ctx.ellipse(15, 3, 4, 9, .38, 0, Math.PI * 2);
+    ctx.ellipse(-12, -24, 4, 8, -.38, 0, Math.PI * 2);
+    ctx.ellipse(17, -23, 4, 8, .38, 0, Math.PI * 2);
     ctx.fill();
     ctx.fillStyle = '#c6a37d';
     ctx.beginPath();
-    ctx.arc(0, -10, 10, 0, Math.PI * 2);
+    ctx.arc(8, -38, 10, 0, Math.PI * 2);
     ctx.fill();
     ctx.fillStyle = '#d2aa4f';
     ctx.beginPath();
-    ctx.arc(0, -13, 10, Math.PI, Math.PI * 2);
-    ctx.quadraticCurveTo(0, -23, -10, -13);
+    ctx.arc(8, -41, 10, Math.PI, Math.PI * 2);
+    ctx.quadraticCurveTo(8, -51, -2, -41);
     ctx.fill();
     ctx.fillStyle = '#4d382c';
-    ctx.fillRect(-9, -13, 18, 2.3);
+    ctx.fillRect(-1, -41, 18, 2.3);
     ctx.fillStyle = '#8c6f48';
     ctx.beginPath();
-    ctx.moveTo(-10, 4);
-    ctx.quadraticCurveTo(-16, 5, -16, 12);
-    ctx.lineTo(-10, 14);
+    ctx.moveTo(10, -21);
+    ctx.quadraticCurveTo(18, -18, 22, -13);
+    ctx.lineTo(13, -12);
     ctx.fill();
     ctx.restore();
   }
 
   function drawBadger(x, y, scale, running = true) {
     const s = scale;
-    const stride = running ? Math.sin(elapsed * 12) * 4 * s : 0;
+    const stride = running ? Math.sin(elapsed * 12) * 3 * s : 0;
     ctx.save();
     ctx.translate(x, y);
     ctx.scale(s, s);
     ctx.fillStyle = 'rgba(5, 7, 5, .42)';
     ctx.beginPath();
-    ctx.ellipse(0, 13, 46, 9, 0, 0, Math.PI * 2);
+    ctx.ellipse(-7, 7, 86, 10, 0, 0, Math.PI * 2);
     ctx.fill();
-    ctx.strokeStyle = '#262927';
-    ctx.lineWidth = 7;
+    ctx.strokeStyle = '#3a3b3a';
+    ctx.lineWidth = 3.5;
     ctx.lineCap = 'round';
     ctx.beginPath();
-    ctx.moveTo(-22, 7);
-    ctx.lineTo(-25 - stride, 15);
-    ctx.moveTo(-5, 8);
-    ctx.lineTo(-4 + stride, 15);
-    ctx.moveTo(20, 7);
-    ctx.lineTo(22 - stride, 15);
+    ctx.moveTo(-34, -1);
+    ctx.lineTo(-37 - stride, 8);
+    ctx.moveTo(-12, 0);
+    ctx.lineTo(-9 + stride, 8);
+    ctx.moveTo(7, 0);
+    ctx.lineTo(10 - stride, 8);
+    ctx.moveTo(25, -1);
+    ctx.lineTo(28 + stride, 7);
     ctx.stroke();
-    ctx.fillStyle = '#696d6b';
+
+    // Long, loose outline and layered pencil strokes echo the hand-drawn reference.
+    ctx.fillStyle = '#8a8b88';
     ctx.beginPath();
-    ctx.ellipse(-4, -2, 36, 16, -.05, 0, Math.PI * 2);
+    ctx.moveTo(-82, -5);
+    ctx.quadraticCurveTo(-54, -26, -24, -26);
+    ctx.quadraticCurveTo(5, -30, 32, -19);
+    ctx.lineTo(38, 1);
+    ctx.quadraticCurveTo(12, 10, -17, 8);
+    ctx.quadraticCurveTo(-55, 12, -79, 1);
+    ctx.closePath();
     ctx.fill();
-    ctx.strokeStyle = 'rgba(202, 202, 188, .55)';
-    ctx.lineWidth = 2;
-    for (let i = 0; i < 7; i++) {
+
+    ctx.strokeStyle = '#4f5150';
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.moveTo(-81, -5);
+    ctx.quadraticCurveTo(-51, -29, -22, -25);
+    ctx.quadraticCurveTo(9, -30, 37, -17);
+    ctx.quadraticCurveTo(30, -7, 37, 1);
+    ctx.quadraticCurveTo(10, 11, -19, 8);
+    ctx.quadraticCurveTo(-54, 12, -79, 1);
+    ctx.stroke();
+
+    ctx.strokeStyle = 'rgba(222, 222, 212, .68)';
+    ctx.lineWidth = 2.2;
+    for (let i = 0; i < 13; i++) {
+      const startX = -73 + i * 7;
+      const startY = -7 - (i % 3) * 3;
       ctx.beginPath();
-      ctx.moveTo(-34 + i * 9, -11 - (i % 2) * 2);
-      ctx.quadraticCurveTo(-15 + i * 3, -25 - (i % 3), 9 + i * 2, -11);
+      ctx.moveTo(startX, startY);
+      ctx.quadraticCurveTo(startX + 20, -28 - (i % 4) * 2, startX + 41, -15 + (i % 3) * 2);
+      ctx.quadraticCurveTo(startX + 23, -4, startX - 1, 2 + (i % 2) * 2);
       ctx.stroke();
     }
-    ctx.fillStyle = '#d8d3c3';
-    ctx.beginPath();
-    ctx.ellipse(28, -1, 17, 14, -.18, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.fillStyle = '#ede7d5';
-    ctx.beginPath();
-    ctx.ellipse(34, 5, 12, 8, .1, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.fillStyle = '#262624';
-    ctx.beginPath();
-    ctx.ellipse(39, 7, 4, 2.8, 0, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.strokeStyle = '#2b2c29';
+
+    ctx.strokeStyle = '#303130';
     ctx.lineWidth = 4;
+    for (let i = 0; i < 6; i++) {
+      ctx.beginPath();
+      ctx.moveTo(2 + i * 4, -2 + (i % 2) * 2);
+      ctx.lineTo(-16 + i * 5 + stride * .4, 9 + (i % 3) * 2);
+      ctx.lineTo(7 + i * 3, 4);
+      ctx.stroke();
+    }
+
+    ctx.fillStyle = '#b8b8b3';
+    ctx.beginPath();
+    ctx.moveTo(-78, -5);
+    ctx.quadraticCurveTo(-93, -16, -109, -4);
+    ctx.quadraticCurveTo(-118, 2, -101, 2);
+    ctx.quadraticCurveTo(-88, -1, -78, 2);
+    ctx.fill();
+
+    ctx.fillStyle = '#ebe8df';
+    ctx.beginPath();
+    ctx.ellipse(48, -17, 25, 28, -.1, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = '#4e4e4a';
+    ctx.lineWidth = 2.7;
+    ctx.stroke();
+
+    ctx.strokeStyle = '#171918';
+    ctx.lineWidth = 5;
     ctx.lineCap = 'round';
     ctx.beginPath();
-    ctx.moveTo(22, -13);
-    ctx.lineTo(28, 3);
-    ctx.moveTo(34, -13);
-    ctx.lineTo(36, 0);
+    ctx.moveTo(31, -40);
+    ctx.quadraticCurveTo(32, -31, 43, -19);
+    ctx.moveTo(54, -43);
+    ctx.quadraticCurveTo(54, -32, 59, -18);
+    ctx.moveTo(68, -36);
+    ctx.lineTo(66, -19);
     ctx.stroke();
+
+    ctx.strokeStyle = '#292a28';
+    ctx.lineWidth = 3;
     ctx.fillStyle = '#181a18';
     ctx.beginPath();
-    ctx.arc(31, -4, 1.7, 0, Math.PI * 2);
+    ctx.arc(65, -8, 2, 0, Math.PI * 2);
     ctx.fill();
-    ctx.fillStyle = '#8d8d82';
     ctx.beginPath();
-    ctx.ellipse(-41, -6, 11, 4, -.15, 0, Math.PI * 2);
+    ctx.ellipse(75, -1, 7, 5, -.1, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = '#e7e4d9';
+    ctx.beginPath();
+    ctx.arc(73, -2, 1.1, 0, Math.PI * 2);
+    ctx.arc(77, -2, 1.1, 0, Math.PI * 2);
     ctx.fill();
     ctx.restore();
   }
 
   function drawChaser() {
     const closeness = clamp(1 - distance / 430, 0, 1);
-    const scale = lerp(.52, 1.08, closeness);
-    const y = lerp(502, 485, closeness);
-    const x = lerp(480, pathPoint(lane, 480), .38);
+    const scale = lerp(.68, 1.05, closeness);
+    const y = laneY(lane, RUNNER_X) + 4;
+    const x = lerp(96, RUNNER_X - 76, closeness);
     drawBadger(x, y, scale, state === 'running');
   }
 
   function drawVignette() {
-    const gradient = ctx.createRadialGradient(480, 275, 115, 480, 270, 565);
+    const gradient = ctx.createRadialGradient(RUNNER_X, 355, 105, 465, 355, 600);
     gradient.addColorStop(0, 'rgba(6, 10, 8, 0)');
     gradient.addColorStop(.62, 'rgba(5, 9, 7, .12)');
     gradient.addColorStop(1, 'rgba(4, 8, 6, .64)');
     ctx.fillStyle = gradient;
     ctx.fillRect(0, 0, W, H);
-    const lightX = pathPoint(lane, 418);
-    const lamp = ctx.createRadialGradient(lightX, 410, 5, lightX, 390, 220);
+    const lightY = laneY(lane, RUNNER_X);
+    const lamp = ctx.createRadialGradient(RUNNER_X + 30, lightY - 25, 5, RUNNER_X + 45, lightY - 20, 235);
     lamp.addColorStop(0, 'rgba(191, 203, 150, .13)');
     lamp.addColorStop(1, 'rgba(191, 203, 150, 0)');
     ctx.fillStyle = lamp;
-    ctx.fillRect(lightX - 220, 170, 440, 370);
+    ctx.fillRect(RUNNER_X - 190, 210, 470, 300);
   }
 
   function addObject(type, laneIndex = Math.floor(rand(0, 3))) {
-    objects.push({ type, lane: laneIndex, y: 158, variant: Math.floor(rand(0, 2)), glow: rand(0, 1) });
+    objects.push({ type, lane: laneIndex, x: W + 55, variant: Math.floor(rand(0, 2)), glow: rand(0, 1) });
   }
 
   function startGame() {
     state = 'running';
     elapsed = 0;
+    sceneryOffset = 0;
     score = 0;
     energy = 100;
     distance = 268;
@@ -617,16 +681,16 @@
       beerTimer = rand(4.4, 7.8);
     }
 
-    const trailSpeed = 104 + energy * 1.48 + Math.min(40, elapsed * .22);
+    const trailSpeed = 112 + energy * .98 + Math.min(34, elapsed * .18);
     const runnerSpeed = 29 + energy * .116;
     const badgerSpeed = 33 + Math.min(12, elapsed * .12);
     distance += (runnerSpeed - badgerSpeed) * dt;
     distance = clamp(distance, 0, 412);
 
-    for (const object of objects) object.y += trailSpeed * dt;
+    for (const object of objects) object.x -= trailSpeed * dt;
     for (let i = objects.length - 1; i >= 0; i--) {
       const object = objects[i];
-      if (Math.abs(object.y - 415) < 25 && object.lane === lane) {
+      if (Math.abs(object.x - RUNNER_X) < 27 && object.lane === lane) {
         if (object.type === 'mushroom') {
           score += 1;
           flash = Math.max(flash, .2);
@@ -641,7 +705,7 @@
           flash = .85;
         }
         objects.splice(i, 1);
-      } else if (object.y > H + 40) objects.splice(i, 1);
+      } else if (object.x < -55) objects.splice(i, 1);
     }
 
     updateHud();
@@ -672,7 +736,7 @@
 
   function changeLane(direction) {
     if (state !== 'running') return;
-    lane = clamp(lane + direction, 0, 2);
+    lane = clamp(lane + direction, 0, LANES.length - 1);
   }
 
   function togglePause() {
@@ -707,9 +771,9 @@
   document.getElementById('restart-button').addEventListener('click', startGame);
   window.addEventListener('keydown', (event) => {
     const key = event.key.toLowerCase();
-    if (['arrowleft', 'arrowright', ' ', 'escape'].includes(key)) event.preventDefault();
-    if (key === 'arrowleft' || key === 'a') changeLane(-1);
-    else if (key === 'arrowright' || key === 'd') changeLane(1);
+    if (['arrowup', 'arrowdown', ' ', 'escape'].includes(key)) event.preventDefault();
+    if (key === 'arrowup' || key === 'w') changeLane(-1);
+    else if (key === 'arrowdown' || key === 's') changeLane(1);
     else if (key === ' ') {
       if (state === 'running' || state === 'paused') togglePause();
       else if (state === 'ready') startGame();
@@ -725,12 +789,12 @@
     if (!touchStart || state !== 'running') { touchStart = null; return; }
     const dx = event.clientX - touchStart.x;
     const dy = event.clientY - touchStart.y;
-    if (Math.abs(dx) > 24) changeLane(dx < 0 ? -1 : 1);
-    else if (Math.abs(dy) < 22) {
+    if (Math.abs(dy) > 24) changeLane(dy < 0 ? -1 : 1);
+    else if (Math.abs(dx) < 22) {
       const bounds = stage.getBoundingClientRect();
-      const localX = event.clientX - bounds.left;
-      if (localX < bounds.width * .44) changeLane(-1);
-      else if (localX > bounds.width * .56) changeLane(1);
+      const localY = event.clientY - bounds.top;
+      if (localY < bounds.height * .44) changeLane(-1);
+      else if (localY > bounds.height * .56) changeLane(1);
     }
     touchStart = null;
   });

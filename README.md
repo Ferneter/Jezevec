@@ -4,10 +4,10 @@ Malá 2D arkáda pro web. Utíkej po noční lesní stezce, vyhýbej se pařezů
 
 ## Ovládání
 
-- **← / →** nebo **A / D** — změna směru
+- **↑ / ↓** nebo **W / S** — změna stezky
 - **Mezerník** — pauza / pokračování
 - **Esc** — návrat na úvodní obrazovku
-- Na telefonu klepni do levé nebo pravé části hry nebo přejeď prstem.
+- Na telefonu klepni do horní nebo dolní části hry nebo přejeď prstem nahoru či dolů.
 
 ## Spuštění
 
