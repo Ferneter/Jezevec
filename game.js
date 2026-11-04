@@ -720,13 +720,13 @@
       spawnTimer = rand(waveInterval * .85, waveInterval * 1.15);
     }
     if (energy < 50 && beerTimer <= 0 && !objects.some((object) => object.type === 'beer')) {
-      if (Math.random() < .78) addObject('beer');
+      addObject('beer');
       beerTimer = rand(4.4, 7.8);
     }
 
     const trailSpeed = 112 + energy * .98 + Math.min(34, elapsed * .18);
     const runnerSpeed = 29 + energy * .116;
-    const badgerSpeed = 33 + Math.min(12, elapsed * .12);
+    const badgerSpeed = 30 + Math.min(12, elapsed * .12);
     distance += (runnerSpeed - badgerSpeed) * dt;
     distance = clamp(distance, 0, MAX_DISTANCE);
 
