@@ -118,7 +118,7 @@ h2 em { font-size: .93em; }
 .screen-stamp i { position: relative; margin-top: 4px; font-size: 12px; font-style: normal; }
 .screen-gameover { background: rgba(9, 13, 11, .38); }
 .over-card { width: min(340px, calc(100% - 38px)); padding: 21px 25px 18px; text-align: center; }
-.over-card h2 { margin: 11px 0 7px; }
+.over-card h2 { margin: 11px 0 7px; white-space: nowrap; }
 .over-card p { margin: 0 auto 13px; }
 .danger-kicker { color: #d98a70; }
 .danger-kicker .tiny-star { color: #de8971; }
